@@ -1,0 +1,125 @@
+import torch
+import torch.nn as nn
+from utils.data_utils import prepare_datasets
+from utils.eval_utils import AverageMeter
+from model import Model
+from transformers import *
+import time
+
+MODELS = {'BERT':(BertModel,       BertTokenizer,       'bert-base-uncased'),
+          'DistilBERT':(DistilBertModel, DistilBertTokenizer, 'distilbert-base-uncased'),
+          'RoBERTa':(RobertaModel,    RobertaTokenizer,    'roberta-base')}
+
+
+
+class ModelHandler():
+	def __init__(self, config):
+		self.config = config
+		tokenizer_model = MODELS[config['model_name']]
+		self.train_loader, self.dev_loader = prepare_datasets(config, tokenizer_model)
+		self._n_dev_batches = len(self.dev_loader.dataset) // config['batch_size']
+		self._n_train_examples = len(self.train_loader.dataset) // config['batch_size']
+		if config['cuda']:
+			self.device = torch.device('cuda')
+		else:
+			self.device = torch.device('cpu')
+
+		self._train_loss = AverageMeter()
+		self._train_f1 = AverageMeter()
+		self._train_em = AverageMeter()
+		self._dev_f1 = AverageMeter()
+		self._dev_em = AverageMeter()
+
+		self.model = Model(config, MODELS[config['model_name']], self.device).to(self.device)
+
+
+	def train(self):
+		self._epoch = self._best_epoch = 0
+		print("\n>>> Dev Epoch: [{} / {}]".format(self._epoch, self.config['max_epochs']))
+		self._run_epoch(self.dev_loader, training=False, verbose=self.config['verbose'])
+		timer.interval("Validation Epoch {}".format(self._epoch))
+		format_str = "Validation Epoch {} -- F1: {:0.2f}, EM: {:0.2f} --"
+		print(format_str.format(self._epoch, self._dev_f1.mean(), self._dev_em.mean()))
+		self._best_f1 = self._dev_f1.mean()
+		self._best_em = self._dev_em.mean()
+		while self._stop_condition(self._epoch):
+			self._epoch += 1
+			print("\n>>> Train Epoch: [{} / {}]".format(self._epoch, self.config['max_epochs']))		 
+			self._run_epoch(self.train_loader, training=True, verbose=self.config['verbose'])
+			format_str = "Training Epoch {} -- Loss: {:0.4f}, F1: {:0.2f}, EM: {:0.2f} --"
+			print(format_str.format(self._epoch, self._train_loss.mean(),
+			self._train_f1.mean(), self._train_em.mean()))
+			print("\n>>> Dev Epoch: [{} / {}]".format(self._epoch, self.config['max_epochs']))
+			self._run_epoch(self.dev_loader, training=False, verbose=self.config['verbose'])
+			format_str = "Validation Epoch {} -- F1: {:0.2f}, EM: {:0.2f} --"
+			print(format_str.format(self._epoch, self._dev_f1.mean(), self._dev_em.mean()))
+
+			if self._best_f1 <= self._dev_f1.mean():
+			    self._best_epoch = self._epoch
+			    self._best_f1 = self._dev_f1.mean()
+			    self._best_em = self._dev_em.mean()
+			    print("!!! Updated: F1: {:0.2f}, EM: {:0.2f}".format(self._best_f1, self._best_em))
+			self._reset_metrics()
+
+
+
+	def _run_epoch(self, data_loader, training=True, verbose=10, out_predictions=False):
+	    start_time = time.time()
+	    for step, input_batch in enumerate(data_loader):
+	        res = self.model(input_batch, training)
+	        tr_loss = 0
+	        if training:
+	        	loss = res['loss']
+	        	tr_loss = loss.mean().item()
+	        start_logits = res['start_logits']
+	        end_logits = res['end_logits']
+	        
+	        if training:
+	        	self.model.update(loss)
+	        paragraphs = [inp['tokens'] for inp in input_batch]
+	        answers = [inp['answer'] for inp in input_batch]
+	        f1, em = self.model.evaluate(start_logits, end_logits, paragraphs, answers)
+
+	        self._update_metrics(tr_loss, f1, em, len(paragraphs), training=training)
+
+	        if training:
+	            self._n_train_examples += len(paragraphs)
+	        if (verbose > 0) and (step % verbose == 0):
+	            mode = "train" if training else "dev"
+	            print(self.report(step, tr_loss, f1 * 100, em * 100, mode))
+	            print('used_time: {:0.2f}s'.format(time.time() - start_time))
+
+	def _update_metrics(self, loss, f1, em, batch_size, training=True):
+		if training:
+			self._train_loss.update(loss)
+			self._train_f1.update(f1 * 100, batch_size)
+			self._train_em.update(em * 100, batch_size)
+		else:
+			self._dev_f1.update(f1 * 100, batch_size)
+			self._dev_em.update(em * 100, batch_size)
+
+	def _reset_metrics(self):
+		self._train_loss.reset()
+		self._train_f1.reset()
+		self._train_em.reset()
+		self._dev_f1.reset()
+		self._dev_em.reset()
+	def report(self, step, loss, f1, em, mode='train'):
+		if mode == "train":
+		    format_str = "[train-{}] step: [{} / {}] | exs = {} | loss = {:0.4f} | f1 = {:0.2f} | em = {:0.2f}"
+		    return format_str.format(self._epoch, step, self._n_train_batches, self._n_train_examples, loss, f1, em)
+		elif mode == "dev":
+		    return "[predict-{}] step: [{} / {}] | f1 = {:0.2f} | em = {:0.2f}".format(
+		            self._epoch, step, self._n_dev_batches, f1, em)
+		elif mode == "test":
+		    return "[test] | test_exs = {} | step: [{} / {}] | f1 = {:0.2f} | em = {:0.2f}".format(
+		            self._n_test_examples, step, self._n_test_batches, f1, em)
+		else:
+			raise ValueError('mode = {} not supported.' % mode)
+	def _stop_condition(self, epoch):
+		"""
+		Checks have not exceeded max epochs and has not gone 10 epochs without improvement.
+		"""
+		no_improvement = epoch >= self._best_epoch + 10
+		exceeded_max_epochs = epoch >= self.config['max_epochs']
+		return False if exceeded_max_epochs or no_improvement else True
