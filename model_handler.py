@@ -5,6 +5,7 @@ from utils.eval_utils import AverageMeter
 from model import Model
 from transformers import *
 import time
+import os
 
 MODELS = {'BERT':(BertModel,       BertTokenizer,       'bert-base-uncased'),
           'DistilBERT':(DistilBertModel, DistilBertTokenizer, 'distilbert-base-uncased'),
@@ -18,7 +19,7 @@ class ModelHandler():
 		tokenizer_model = MODELS[config['model_name']]
 		self.train_loader, self.dev_loader = prepare_datasets(config, tokenizer_model)
 		self._n_dev_batches = len(self.dev_loader.dataset) // config['batch_size']
-		self._n_train_examples = len(self.train_loader.dataset) // config['batch_size']
+		self._n_train_batches = len(self.train_loader.dataset) // config['batch_size']
 		if config['cuda']:
 			self.device = torch.device('cuda')
 		else:
@@ -31,17 +32,24 @@ class ModelHandler():
 		self._dev_em = AverageMeter()
 
 		self.model = Model(config, MODELS[config['model_name']], self.device).to(self.device)
-
+		self.optimizer = AdamW(self.model.parameters(), lr=config['lr'], correct_bias=False)
+		self._n_train_examples = 0
+		self._epoch = self._best_epoch = 0
+		self._best_f1 = 0
+		self._best_em = 0
+		self.restored = False
+		if config['pretrained_dir'] is not None:
+			self.restore()
 
 	def train(self):
-		self._epoch = self._best_epoch = 0
-		print("\n>>> Dev Epoch: [{} / {}]".format(self._epoch, self.config['max_epochs']))
-		self._run_epoch(self.dev_loader, training=False, verbose=self.config['verbose'])
-		timer.interval("Validation Epoch {}".format(self._epoch))
-		format_str = "Validation Epoch {} -- F1: {:0.2f}, EM: {:0.2f} --"
-		print(format_str.format(self._epoch, self._dev_f1.mean(), self._dev_em.mean()))
-		self._best_f1 = self._dev_f1.mean()
-		self._best_em = self._dev_em.mean()
+		if not self.restored:
+			print("\n>>> Dev Epoch: [{} / {}]".format(self._epoch, self.config['max_epochs']))
+			self._run_epoch(self.dev_loader, training=False, verbose=self.config['verbose'])
+			timer.interval("Validation Epoch {}".format(self._epoch))
+			format_str = "Validation Epoch {} -- F1: {:0.2f}, EM: {:0.2f} --"
+			print(format_str.format(self._epoch, self._dev_f1.mean(), self._dev_em.mean()))
+			self._best_f1 = self._dev_f1.mean()
+			self._best_em = self._dev_em.mean()
 		while self._stop_condition(self._epoch):
 			self._epoch += 1
 			print("\n>>> Train Epoch: [{} / {}]".format(self._epoch, self.config['max_epochs']))		 
@@ -53,14 +61,54 @@ class ModelHandler():
 			self._run_epoch(self.dev_loader, training=False, verbose=self.config['verbose'])
 			format_str = "Validation Epoch {} -- F1: {:0.2f}, EM: {:0.2f} --"
 			print(format_str.format(self._epoch, self._dev_f1.mean(), self._dev_em.mean()))
-
+			
 			if self._best_f1 <= self._dev_f1.mean():
 			    self._best_epoch = self._epoch
 			    self._best_f1 = self._dev_f1.mean()
 			    self._best_em = self._dev_em.mean()
 			    print("!!! Updated: F1: {:0.2f}, EM: {:0.2f}".format(self._best_f1, self._best_em))
 			self._reset_metrics()
+			self.save()
 
+	def restore(self):
+		if not os.path.exists(self.config['pretrained_dir']):
+			print('dir doesn\'t exists, cannot restore')
+			return
+		restored_params = torch.load(self.config['pretrained_dir']+'/latest/model.pth')
+		self.model.load_state_dict(restored_params['model'])
+		self.optimizer.load_state_dict(restored_params['optimizer'])
+		self._epoch = restored_params['epoch']
+		self._best_epoch = restored_params['best_epoch']
+		self._n_train_examples = restored_params['train_examples']
+		self._best_f1 = restored_params['best_f1']
+		self._best_em = restored_params['best_em']
+		self.restored = True
+
+	def save(self):
+		if not os.path.exists(self.config['save_state_dir']):
+			os.mkdir(self.config['save_state_dir'])
+		
+		if self._best_epoch == self._epoch:
+			if not os.path.exists(self.config['save_state_dir']+'/best'):
+				os.mkdir(self.config['save_state_dir']+'/best')
+			save_dic = {'epoch':self._epoch,
+			'best_epoch': self._best_epoch,
+			'train_examples':self._n_train_examples,
+			'model':self.model.state_dict(),
+			'optimizer':self.optimizer.state_dict(),
+			'best_f1':self._best_f1,
+			'best_em':self._best_em}
+			torch.save(save_dic, self.config['save_state_dir']+'/best/model.pth')
+		if not os.path.exists(self.config['save_state_dir']+'/latest'):
+			os.mkdir(self.config['save_state_dir']+'/latest')
+		save_dic = {'epoch':self._epoch,
+			'best_epoch': self._best_epoch,
+			'train_examples':self._n_train_examples,
+			'model':self.model.state_dict(),
+			'optimizer':self.optimizer.state_dict(),
+			'best_f1':self._best_f1,
+			'best_em':self._best_em}
+		torch.save(save_dic, self.config['save_state_dir']+'/latest/model.pth')
 
 
 	def _run_epoch(self, data_loader, training=True, verbose=10, out_predictions=False):
@@ -75,7 +123,7 @@ class ModelHandler():
 	        end_logits = res['end_logits']
 	        
 	        if training:
-	        	self.model.update(loss)
+	        	self.model.update(loss, self.optimizer)
 	        paragraphs = [inp['tokens'] for inp in input_batch]
 	        answers = [inp['answer'] for inp in input_batch]
 	        f1, em = self.model.evaluate(start_logits, end_logits, paragraphs, answers)

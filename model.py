@@ -17,7 +17,7 @@ class Model(nn.Module):
 			self.pretrained_model = model[0].from_pretrained(model[2]).to(device)
 		self.pretrained_model.train()
 		self.qa_outputs = nn.Linear(768, 2)
-		self.optimizer = AdamW(self.parameters(), lr=config['lr'], correct_bias=False)
+		
 	def forward(self, inputs, train = True):
 		input_ids = torch.tensor([inp['input_tokens'] for inp in inputs], dtype = torch.long).to(self.device)
 		input_mask = torch.tensor([inp['input_mask'] for inp in inputs], dtype = torch.long).to(self.device)
@@ -39,19 +39,19 @@ class Model(nn.Module):
 				start_positions = start_positions.squeeze(-1)
 			if len(end_positions.size()) > 1:
 				end_positions = end_positions.squeeze(-1)
-			loss_fct = CrossEntropyLoss()
+			loss_fct = nn.CrossEntropyLoss()
 			start_loss = loss_fct(start_logits, start_positions)
 			end_loss = loss_fct(end_logits, end_positions)
 			total_loss = (start_loss + end_loss) / 2
 			results['loss'] = total_loss
 		return results
 
-	def update(self, loss):
+	def update(self, loss, optimizer):
 		loss = loss.mean()
-		self.optimizer.zero_grad()
+		optimizer.zero_grad()
 		loss.backward()
 		nn.utils.clip_grad_norm_(self.parameters(), self.config['grad_clip'])
-		self.optimizer.step()
+		optimizer.step()
 
 	def evaluate(self, score_s, score_e, paragraphs, answers):
 	    score_s = score_s.exp().squeeze()
