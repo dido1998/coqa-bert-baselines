@@ -13,7 +13,7 @@ def prepare_datasets(config, tokenizer_model):
     trainloader = DataLoader(trainset, batch_size = config['batch_size'], shuffle = config['shuffle'], collate_fn=lambda x: x, pin_memory=True)
     devset = CoQADataset(config['devset'])
     devset.chunk_paragraphs(tokenizer)
-    devloader = DataLoader(trainset, batch_size = config['batch_size'], shuffle = config['shuffle'], collate_fn=lambda x: x, pin_memory=True)
+    devloader = DataLoader(devset, batch_size = config['batch_size'], shuffle = config['shuffle'], collate_fn=lambda x: x, pin_memory=True)
     return trainloader, devloader
 def get_file_contents(filename, encoding='utf-8'):
     with io.open(filename, encoding=encoding) as f:
