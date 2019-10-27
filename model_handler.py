@@ -45,7 +45,7 @@ class ModelHandler():
 		if not self.restored:
 			print("\n>>> Dev Epoch: [{} / {}]".format(self._epoch, self.config['max_epochs']))
 			self._run_epoch(self.dev_loader, training=False, verbose=self.config['verbose'])
-			timer.interval("Validation Epoch {}".format(self._epoch))
+			#timer.interval("Validation Epoch {}".format(self._epoch))
 			format_str = "Validation Epoch {} -- F1: {:0.2f}, EM: {:0.2f} --"
 			print(format_str.format(self._epoch, self._dev_f1.mean(), self._dev_em.mean()))
 			self._best_f1 = self._dev_f1.mean()
