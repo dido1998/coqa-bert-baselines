@@ -2,18 +2,19 @@ import json
 import io
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
-from .timer import Timer
 from collections import Counter, defaultdict
 import numpy as np
+from random import shuffle
+import math
 
 def prepare_datasets(config, tokenizer_model):
     tokenizer = tokenizer_model[1].from_pretrained(tokenizer_model[2])
     trainset = CoQADataset(config['trainset'])
     trainset.chunk_paragraphs(tokenizer)
-    trainloader = DataLoader(trainset, batch_size = config['batch_size'], shuffle = config['shuffle'], collate_fn=lambda x: x, pin_memory=True)
+    trainloader = CustomDataLoader(trainset, config['batch_size'])
     devset = CoQADataset(config['devset'])
     devset.chunk_paragraphs(tokenizer)
-    devloader = DataLoader(devset, batch_size = config['batch_size'], shuffle = config['shuffle'], collate_fn=lambda x: x, pin_memory=True)
+    devloader = CustomDataLoader(devset, config['batch_size'])
     return trainloader, devloader
 def get_file_contents(filename, encoding='utf-8'):
     with io.open(filename, encoding=encoding) as f:
@@ -30,7 +31,7 @@ class CoQADataset(Dataset):
     """CoQA dataset."""
 
     def __init__(self, filename):
-        timer = Timer('Load %s' % filename)
+        #timer = Timer('Load %s' % filename)
         self.filename = filename
         paragraph_lens = []
         question_lens = []
@@ -68,7 +69,7 @@ class CoQADataset(Dataset):
         print('Load {} paragraphs, {} examples.'.format(len(self.paragraphs), len(self.examples)))
         print('Paragraph length: avg = %.1f, max = %d' % (np.average(paragraph_lens), np.max(paragraph_lens)))
         print('Question length: avg = %.1f, max = %d' % (np.average(question_lens), np.max(question_lens)))
-        timer.finish()
+        #timer.finish()
         self.chunked_examples = []
         
 
@@ -133,15 +134,53 @@ class CoQADataset(Dataset):
     def __getitem__(self, idx):
         return self.chunked_examples[idx]
 
+class CustomDataLoader:
+    def __init__(self, dataset, batch_size):
+        self.dataset = dataset
+        self.batch_size = batch_size
+        self.state = 0
+        self.batch_state = 0
+        self.examples = [i for i in range(len(self.dataset))]
+        self.current_view = []
+    
+    def __len__(self):
+        return math.ceil(len(self.examples)/self.batch_size)
+
+    def prepare(self):
+        shuffle(self.examples)
+        self.state = 0
+        self.batch_state = 0
+
+    def restore(self, examples, state, batch_state):
+        self.examples = examples
+        self.state = state
+        self.batch_state = batch_state
+    
+    def get(self):
+        data_view = []
+        for i in range(self.batch_size):
+            if self.state + i < len(self.examples):
+                data_view.append(self.dataset[self.examples[self.state + i]])
+        self.state += self.batch_size
+        self.batch_state+=1
+        return data_view
+
+
 if __name__=='__main__':
     from transformers import *
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
     dataset = CoQADataset('/home/aniket/coqa-bert-baselines/data/coqa.train.json')
     dataset.chunk_paragraphs(tokenizer)
-    dataloader = DataLoader(dataset, batch_size=64,shuffle=True, collate_fn=lambda x: x, pin_memory=True)
-    for d in dataloader:
-        print(d[0]['question'])
-        print(d[0]['tokens'][d[0]['start']:d[0]['end']+1])
-        print(d[0]['paragraph'][d[0]['span'][0]:d[0]['span'][1]+1])
-        print(d[0]['input_mask'])
-        break
+
+    dataloader = CustomDataLoader(dataset, 4)
+    dataloader.prepare()
+    c = 0
+    while dataloader.batch_state < len(dataloader):
+        d = dataloader.get()
+
+        print(dataloader.batch_state)
+        #if dataloader.batch_state > 30000:
+        #    print(d)
+        print('------------------')
+        c+=1
+    print(c)

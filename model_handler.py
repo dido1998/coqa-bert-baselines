@@ -44,21 +44,25 @@ class ModelHandler():
 	def train(self):
 		if not self.restored:
 			print("\n>>> Dev Epoch: [{} / {}]".format(self._epoch, self.config['max_epochs']))
-			self._run_epoch(self.dev_loader, training=False, verbose=self.config['verbose'])
+			#self._run_epoch(self.dev_loader, training=False, verbose=self.config['verbose'], save = False)
 			#timer.interval("Validation Epoch {}".format(self._epoch))
-			format_str = "Validation Epoch {} -- F1: {:0.2f}, EM: {:0.2f} --"
-			print(format_str.format(self._epoch, self._dev_f1.mean(), self._dev_em.mean()))
-			self._best_f1 = self._dev_f1.mean()
-			self._best_em = self._dev_em.mean()
+			#format_str = "Validation Epoch {} -- F1: {:0.2f}, EM: {:0.2f} --"
+			#print(format_str.format(self._epoch, self._dev_f1.mean(), self._dev_em.mean()))
+			#self._best_f1 = self._dev_f1.mean()
+			#self._best_em = self._dev_em.mean()
 		while self._stop_condition(self._epoch):
 			self._epoch += 1
-			print("\n>>> Train Epoch: [{} / {}]".format(self._epoch, self.config['max_epochs']))		 
+			print("\n>>> Train Epoch: [{} / {}]".format(self._epoch, self.config['max_epochs']))
+			if not self.restored:
+				self.train_loader.prepare()	 
+			self.restored = False
 			self._run_epoch(self.train_loader, training=True, verbose=self.config['verbose'])
 			format_str = "Training Epoch {} -- Loss: {:0.4f}, F1: {:0.2f}, EM: {:0.2f} --"
 			print(format_str.format(self._epoch, self._train_loss.mean(),
 			self._train_f1.mean(), self._train_em.mean()))
 			print("\n>>> Dev Epoch: [{} / {}]".format(self._epoch, self.config['max_epochs']))
-			self._run_epoch(self.dev_loader, training=False, verbose=self.config['verbose'])
+			self.dev_loader.prepare()
+			self._run_epoch(self.dev_loader, training=False, verbose=self.config['verbose'], save = False)
 			format_str = "Validation Epoch {} -- F1: {:0.2f}, EM: {:0.2f} --"
 			print(format_str.format(self._epoch, self._dev_f1.mean(), self._dev_em.mean()))
 			
@@ -68,7 +72,7 @@ class ModelHandler():
 			    self._best_em = self._dev_em.mean()
 			    print("!!! Updated: F1: {:0.2f}, EM: {:0.2f}".format(self._best_f1, self._best_em))
 			self._reset_metrics()
-			self.save()
+			self.save(self._epoch)
 
 	def restore(self):
 		if not os.path.exists(self.config['pretrained_dir']):
@@ -82,9 +86,14 @@ class ModelHandler():
 		self._n_train_examples = restored_params['train_examples']
 		self._best_f1 = restored_params['best_f1']
 		self._best_em = restored_params['best_em']
+		examples = restored_params['dataloader_examples']
+		batch_state = restored_params['dataloader_batch_state']
+		state = restored_params['dataloader_state']
+		self.train_loader.restore(examples, state, batch_state)
+
 		self.restored = True
 
-	def save(self):
+	def save(self, save_epoch_val):
 		if not os.path.exists(self.config['save_state_dir']):
 			os.mkdir(self.config['save_state_dir'])
 		
@@ -101,19 +110,23 @@ class ModelHandler():
 			torch.save(save_dic, self.config['save_state_dir']+'/best/model.pth')
 		if not os.path.exists(self.config['save_state_dir']+'/latest'):
 			os.mkdir(self.config['save_state_dir']+'/latest')
-		save_dic = {'epoch':self._epoch,
+		save_dic = {'epoch':save_epoch_val,
 			'best_epoch': self._best_epoch,
 			'train_examples':self._n_train_examples,
 			'model':self.model.state_dict(),
 			'optimizer':self.optimizer.state_dict(),
 			'best_f1':self._best_f1,
-			'best_em':self._best_em}
+			'best_em':self._best_em,
+			'dataloader_batch_state': self.train_loader.batch_state,
+			'dataloader_state':self.train_loader.state,
+			'dataloader_examples':self.train_loader.examples}
 		torch.save(save_dic, self.config['save_state_dir']+'/latest/model.pth')
 
 
-	def _run_epoch(self, data_loader, training=True, verbose=10, out_predictions=False):
+	def _run_epoch(self, data_loader, training=True, verbose=10, out_predictions=False, save = True):
 	    start_time = time.time()
-	    for step, input_batch in enumerate(data_loader):
+	    while data_loader.batch_state < len(data_loader):
+	        input_batch = data_loader.get()
 	        res = self.model(input_batch, training)
 	        tr_loss = 0
 	        if training:
@@ -132,9 +145,11 @@ class ModelHandler():
 
 	        if training:
 	            self._n_train_examples += len(paragraphs)
-	        if (verbose > 0) and (step % verbose == 0):
+	        if (verbose > 0) and (data_loader.batch_state % verbose == 0):
+	            if save:
+	            	self.save(self._epoch - 1)
 	            mode = "train" if training else "dev"
-	            print(self.report(step, tr_loss, f1 * 100, em * 100, mode))
+	            print(self.report(data_loader.batch_state, tr_loss, f1 * 100, em * 100, mode))
 	            print('used_time: {:0.2f}s'.format(time.time() - start_time))
 
 	def _update_metrics(self, loss, f1, em, batch_size, training=True):
