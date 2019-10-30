@@ -54,12 +54,12 @@ class Model(nn.Module):
 		optimizer.step()
 
 	def evaluate(self, score_s, score_e, paragraphs, answers):
-		if score_s.size(0) > 1:
-		    score_s = score_s.exp().squeeze()
-		    score_e = score_e.exp().squeeze()
-		else:
-		    score_s = score_s.exp()
-		    score_e = score_e.exp()
+	    if score_s.size(0) > 1:
+	        score_s = score_s.exp().squeeze()
+	        score_e = score_e.exp().squeeze()
+	    else:
+	        score_s = score_s.exp()
+	        score_e = score_e.exp()
 	    predictions = []
 	    spans = []
 	    for i, (_s, _e) in enumerate(zip(score_s, score_e)):
