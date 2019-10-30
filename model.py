@@ -58,7 +58,7 @@ class Model(nn.Module):
 		    score_s = score_s.exp().squeeze()
 		    score_e = score_e.exp().squeeze()
 		else:
-			score_s = score_s.exp()
+		    score_s = score_s.exp()
 		    score_e = score_e.exp()
 	    predictions = []
 	    spans = []
