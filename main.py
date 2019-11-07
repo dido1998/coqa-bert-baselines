@@ -27,7 +27,8 @@ parser.add_argument('--max_epochs', type = int, default = 20)
 parser.add_argument('--lr', type = float, default = 2e-4)
 parser.add_argument('--grad_clip', type = float, default = 1.0)
 parser.add_argument('--verbose', type = int, default = 200, help = "print after verbose epochs")
-
+parser.add_argument('--gradient_accumulation_steps', type=int, default=2,
+                        help="Number of updates steps to accumulate before performing a backward/update pass.")
 parser.add_argument("--adam_epsilon", default=1e-8, type=float,
                     help="Epsilon for Adam optimizer.")
 parser.add_argument("--max_grad_norm", default=1.0, type=float,
