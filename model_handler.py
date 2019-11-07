@@ -34,7 +34,7 @@ class ModelHandler():
 		self.model = Model(config, MODELS[config['model_name']], self.device).to(self.device)
 		t_total = len(self.train_loader) // config['gradient_accumulation_steps'] * config['max_epochs']
 		self.optimizer = AdamW(self.model.parameters(), lr=config['lr'], eps = config['adam_epsilon'] )
-		self.scheduler = WarmupLinearSchedule(optimizer, warmup_steps = config['warmup_steps'], t_total = t_total)
+		self.scheduler = WarmupLinearSchedule(self.optimizer, warmup_steps = config['warmup_steps'], t_total = t_total)
 		self.optimizer.zero_grad()
 		self._n_train_examples = 0
 		self._epoch = self._best_epoch = 0
