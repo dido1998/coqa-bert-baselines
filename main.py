@@ -24,9 +24,16 @@ parser.add_argument('--n_history', type = int, default = 2, help = 'number of pr
 parser.add_argument('--batch-size', type = int, default = 2)
 parser.add_argument('--shuffle', type = str2bool, default = True)
 parser.add_argument('--max_epochs', type = int, default = 20)
-parser.add_argument('--lr', type = float, default = 3e-5)
+parser.add_argument('--lr', type = float, default = 2e-4)
 parser.add_argument('--grad_clip', type = float, default = 1.0)
 parser.add_argument('--verbose', type = int, default = 200, help = "print after verbose epochs")
+
+parser.add_argument("--adam_epsilon", default=1e-8, type=float,
+                    help="Epsilon for Adam optimizer.")
+parser.add_argument("--max_grad_norm", default=1.0, type=float,
+                    help="Max gradient norm.")
+parser.add_argument("--warmup_steps", default=2, type=int,
+					help="Linear warmup over warmup_steps.")
 
 args = vars(parser.parse_args())
 
