@@ -34,8 +34,8 @@ class ModelHandler():
 		self.model = Model(config, MODELS[config['model_name']], self.device).to(self.device)
 		t_total = len(self.train_loader) // config['gradient_accumulation_steps'] * config['max_epochs']
 		self.optimizer = AdamW(self.model.parameters(), lr=config['lr'], eps = config['adam_epsilon'] )
-		self.scheduler = WarmupLinearSchedule(self.optimizer, warmup_steps = config['warmup_steps'], t_total = t_total)
-		self.optimizer.zero_grad()
+		#self.scheduler = WarmupLinearSchedule(self.optimizer, warmup_steps = config['warmup_steps'], t_total = t_total)
+		#self.optimizer.zero_grad()
 		self._n_train_examples = 0
 		self._epoch = self._best_epoch = 0
 		self._best_f1 = 0
@@ -84,7 +84,7 @@ class ModelHandler():
 		restored_params = torch.load(self.config['pretrained_dir']+'/latest/model.pth')
 		self.model.load_state_dict(restored_params['model'])
 		self.optimizer.load_state_dict(restored_params['optimizer'])
-		self.scheduler.load_state_dict(restored_params['scheduler'])
+		#self.scheduler.load_state_dict(restored_params['scheduler'])
 		self._epoch = restored_params['epoch']
 		self._best_epoch = restored_params['best_epoch']
 		self._n_train_examples = restored_params['train_examples']
@@ -110,8 +110,7 @@ class ModelHandler():
 			'model':self.model.state_dict(),
 			'optimizer':self.optimizer.state_dict(),
 			'best_f1':self._best_f1,
-			'best_em':self._best_em,
-			'scheduler':self.scheduler.state_dict()}
+			'best_em':self._best_em}
 			torch.save(save_dic, self.config['save_state_dir']+'/best/model.pth')
 		if not os.path.exists(self.config['save_state_dir']+'/latest'):
 			os.mkdir(self.config['save_state_dir']+'/latest')
@@ -124,8 +123,7 @@ class ModelHandler():
 			'best_em':self._best_em,
 			'dataloader_batch_state': self.train_loader.batch_state,
 			'dataloader_state':self.train_loader.state,
-			'dataloader_examples':self.train_loader.examples,
-			'scheduler':self.scheduler.state_dict()}
+			'dataloader_examples':self.train_loader.examples}
 		torch.save(save_dic, self.config['save_state_dir']+'/latest/model.pth')
 
 
@@ -137,14 +135,14 @@ class ModelHandler():
 	        tr_loss = 0
 	        if training:
 	        	loss = res['loss']
-	        	if self.config['gradient_accumulation_steps'] > 1:
-	        		loss = loss / self.config['gradient_accumulation_steps']
+	        	#if self.config['gradient_accumulation_steps'] > 1:
+	        	#	loss = loss / self.config['gradient_accumulation_steps']
 	        	tr_loss = loss.mean().item()
 	        start_logits = res['start_logits']
 	        end_logits = res['end_logits']
 	        
 	        if training:
-	        	self.model.update(loss, self.optimizer, data_loader.batch_state, self.scheduler)
+	        	self.model.update(loss, self.optimizer)
 	        paragraphs = [inp['tokens'] for inp in input_batch]
 	        answers = [inp['answer'] for inp in input_batch]
 	        f1, em = self.model.evaluate(start_logits, end_logits, paragraphs, answers)
