@@ -56,7 +56,7 @@ class Model(nn.Module):
 		nn.utils.clip_grad_norm_(self.parameters(), self.config['grad_clip'])
 		if (step + 1) % self.config['gradient_accumulation_steps']:
 			optimizer.step()
-			scheduler.step()
+			#scheduler.step()
 
 	def evaluate(self, score_s, score_e, paragraphs, answers):
 	    if score_s.size(0) > 1:
