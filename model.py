@@ -46,16 +46,16 @@ class Model(nn.Module):
 			results['loss'] = total_loss
 		return results
 
-	def update(self, loss, optimizer):
+	def update(self, loss, optimizer, step):
 		loss = loss.mean()
-		#if (step + 1) % self.config['gradient_accumulation_steps']:
-		optimizer.zero_grad()
-
+		
 		loss.backward()
 		
-		nn.utils.clip_grad_norm_(self.parameters(), self.config['grad_clip'])
-		#if (step + 1) % self.config['gradient_accumulation_steps']:
-		optimizer.step()
+		
+		if (step + 1) % self.config['gradient_accumulation_steps']:
+			nn.utils.clip_grad_norm_(self.parameters(), self.config['grad_clip'])
+			optimizer.step()
+			optimizer.zero_grad()
 		#scheduler.step()
 
 	def evaluate(self, score_s, score_e, paragraphs, answers):

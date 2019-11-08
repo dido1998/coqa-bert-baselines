@@ -35,7 +35,7 @@ class ModelHandler():
 		t_total = len(self.train_loader) // config['gradient_accumulation_steps'] * config['max_epochs']
 		self.optimizer = AdamW(self.model.parameters(), lr=config['lr'], eps = config['adam_epsilon'] )
 		#self.scheduler = WarmupLinearSchedule(self.optimizer, warmup_steps = config['warmup_steps'], t_total = t_total)
-		#self.optimizer.zero_grad()
+		self.optimizer.zero_grad()
 		self._n_train_examples = 0
 		self._epoch = self._best_epoch = 0
 		self._best_f1 = 0
@@ -135,14 +135,14 @@ class ModelHandler():
 	        tr_loss = 0
 	        if training:
 	        	loss = res['loss']
-	        	#if self.config['gradient_accumulation_steps'] > 1:
-	        	#	loss = loss / self.config['gradient_accumulation_steps']
+	        	if self.config['gradient_accumulation_steps'] > 1:
+	        		loss = loss / self.config['gradient_accumulation_steps']
 	        	tr_loss = loss.mean().item()
 	        start_logits = res['start_logits']
 	        end_logits = res['end_logits']
 	        
 	        if training:
-	        	self.model.update(loss, self.optimizer)
+	        	self.model.update(loss, self.optimizer, data_loader.batch_state)
 	        paragraphs = [inp['tokens'] for inp in input_batch]
 	        answers = [inp['answer'] for inp in input_batch]
 	        f1, em = self.model.evaluate(start_logits, end_logits, paragraphs, answers)
