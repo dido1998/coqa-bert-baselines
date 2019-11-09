@@ -56,7 +56,8 @@ class Model(nn.Module):
 		
 		
 		if (step + 1) % self.config['gradient_accumulation_steps']:
-			nn.utils.clip_grad_norm_(self.parameters(), self.config['grad_clip'])
+			grad_norm = nn.utils.clip_grad_norm_(self.parameters(), self.config['grad_clip'])
+			print(grad_norm)
 			optimizer.step()
 			optimizer.zero_grad()
 		#scheduler.step()
@@ -76,9 +77,7 @@ class Model(nn.Module):
 	        prediction, span = self._scores_to_text(paragraphs[i], _s, _e)
 	        predictions.append(prediction)
 	        spans.append(span)
-	    print(predictions)
-	    print(answers)
-	    print('----------------------------------')
+
 	    f1, em = self.evaluate_predictions(predictions, answers)
 	    return f1, em
 
