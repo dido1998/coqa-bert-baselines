@@ -57,7 +57,7 @@ class Model(nn.Module):
 		
 		if (step + 1) % self.config['gradient_accumulation_steps']:
 			grad_norm = nn.utils.clip_grad_norm_(self.parameters(), self.config['grad_clip'])
-			print(grad_norm)
+			#print(grad_norm)
 			optimizer.step()
 			optimizer.zero_grad()
 		#scheduler.step()
