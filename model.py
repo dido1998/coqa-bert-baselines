@@ -77,6 +77,8 @@ class Model(nn.Module):
 	        predictions.append(prediction)
 	        spans.append(span)
 	    print(predictions)
+	    print(answers)
+	    print('----------------------------------')
 	    f1, em = self.evaluate_predictions(predictions, answers)
 	    return f1, em
 
