@@ -77,7 +77,9 @@ class Model(nn.Module):
 	        prediction, span = self._scores_to_text(paragraphs[i], _s, _e)
 	        predictions.append(prediction)
 	        spans.append(span)
-
+	    print(predictions)
+	    print(answers)
+	    print('---------------------')
 	    f1, em = self.evaluate_predictions(predictions, answers)
 	    return f1, em
 
