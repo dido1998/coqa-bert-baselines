@@ -74,6 +74,8 @@ class CoQADataset(Dataset):
         
 
     def chunk_paragraphs(self, tokenizer):
+        c_unknown = 0
+        c_known = 0
         for i, ex in enumerate(self.examples):
             question_length = len(ex['annotated_question']['word'])
             if question_length > 350: # TODO provide from config
@@ -118,14 +120,18 @@ class CoQADataset(Dataset):
                 end = ex['answer_span'][1]
 
                 if start >= spans[0] and end <= spans[1]:
+                    c_known+=1
                     start = question_length + 1 + start
                     end = question_length + 1 + end
+                    _example  = {'tokens': tokens,'paragraph':paragraph, 'answer':tokens[start : end + 1], 'question':ex['annotated_question']['word'], 'span':ex['answer_span'] ,'input_tokens':input_ids, 'input_mask':input_mask, 'segment_ids':segment_ids, 'start':start, 'end':end}
+                    self.chunked_examples.append(_example)
                 else:
+                    c_unknown+=1
                     start = len(tokens) - 1
                     end = len(tokens) - 1
-                _example  = {'tokens': tokens,'paragraph':paragraph, 'answer':tokens[start : end + 1], 'question':ex['annotated_question']['word'], 'span':ex['answer_span'] ,'input_tokens':input_ids, 'input_mask':input_mask, 'segment_ids':segment_ids, 'start':start, 'end':end}
-                self.chunked_examples.append(_example)
-
+                
+        print(c_unknown)
+        print(c_known)
 
 
     def __len__(self):
@@ -171,16 +177,3 @@ if __name__=='__main__':
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
     dataset = CoQADataset('/home/aniket/coqa-bert-baselines/data/coqa.train.json')
     dataset.chunk_paragraphs(tokenizer)
-
-    dataloader = CustomDataLoader(dataset, 4)
-    dataloader.prepare()
-    c = 0
-    while dataloader.batch_state < len(dataloader):
-        d = dataloader.get()
-
-        print(dataloader.batch_state)
-        #if dataloader.batch_state > 30000:
-        #    print(d)
-        print('------------------')
-        c+=1
-    print(c)
