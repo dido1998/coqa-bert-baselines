@@ -117,9 +117,9 @@ class CoQADataset(Dataset):
                 input_mask = [1] * len(tokens)
                 input_ids = tokenizer.convert_tokens_to_ids(tokens)
                 converted_to_string = tokenizer.convert_ids_to_tokens(input_ids)
-                #input_ids.extend([0]*(512 - len(tokens)))
-                #input_mask.extend([0] * (512 - len(tokens)))
-                #segment_ids.extend([0] * (512 - len(tokens)))
+                input_ids.extend([0]*(512 - len(tokens)))
+                input_mask.extend([0] * (512 - len(tokens)))
+                segment_ids.extend([0] * (512 - len(tokens)))
 
                 start = ex['answer_span'][0]
                 end = ex['answer_span'][1]
