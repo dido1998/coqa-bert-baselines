@@ -100,21 +100,26 @@ class CoQADataset(Dataset):
                 tokens = []
                 for q in ex['annotated_question']['word']:
                     segment_ids.append(0)
-                    tokens.append(q)
+                    tokens.append(q.lower())
+                    tokenizer.add_tokens([q.lower()])
 
                 tokens.append('[SEP]')
                 segment_ids.append(0)
-
+                for k in range(spans[0], spans[0]+spans[1]):
+                    paragraph[k] = paragraph[k].lower()
+                    tokenizer.add_tokens([paragraph[k]])
                 tokens.extend(paragraph[spans[0]:spans[0] + spans[1]])
                 segment_ids.extend([1] * spans[1])
                 if spans[2] == 1:
-                    tokens.append('unknown')
+                    tokens.append('<unknown>')
+                    tokenizer.add_tokens(['<unknown>'])
                     segment_ids.append(1)
                 input_mask = [1] * len(tokens)
                 input_ids = tokenizer.convert_tokens_to_ids(tokens)
-                input_ids.extend([0]*(512 - len(tokens)))
-                input_mask.extend([0] * (512 - len(tokens)))
-                segment_ids.extend([0] * (512 - len(tokens)))
+                converted_to_string = tokenizer.convert_ids_to_tokens(input_ids)
+                #input_ids.extend([0]*(512 - len(tokens)))
+                #input_mask.extend([0] * (512 - len(tokens)))
+                #segment_ids.extend([0] * (512 - len(tokens)))
 
                 start = ex['answer_span'][0]
                 end = ex['answer_span'][1]
@@ -123,7 +128,7 @@ class CoQADataset(Dataset):
                     c_known+=1
                     start = question_length + 1 + start
                     end = question_length + 1 + end
-                    _example  = {'tokens': tokens,'paragraph':paragraph, 'answer':tokens[start : end + 1], 'question':ex['annotated_question']['word'], 'span':ex['answer_span'] ,'input_tokens':input_ids, 'input_mask':input_mask, 'segment_ids':segment_ids, 'start':start, 'end':end}
+                    _example  = {'tokens': tokens,'converted': converted_to_string, 'paragraph':paragraph, 'answer':tokens[start : end + 1], 'question':ex['annotated_question']['word'], 'span':ex['answer_span'] ,'input_tokens':input_ids, 'input_mask':input_mask, 'segment_ids':segment_ids, 'start':start, 'end':end}
                     self.chunked_examples.append(_example)
                 else:
                     c_unknown+=1
@@ -177,3 +182,12 @@ if __name__=='__main__':
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
     dataset = CoQADataset('/home/aniket/coqa-bert-baselines/data/coqa.train.json')
     dataset.chunk_paragraphs(tokenizer)
+    dataloader = CustomDataLoader(dataset, 4)
+    dataloader.prepare()
+    view = dataloader.get()
+    s = ''
+    for k, v in zip(view[0]['converted'], zip(view[0]['tokens'])):
+        
+        s += k + ' '+ v[0] + '|'
+    print(s)
+

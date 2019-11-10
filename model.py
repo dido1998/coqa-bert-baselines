@@ -19,6 +19,12 @@ class Model(nn.Module):
 		self.qa_outputs = nn.Linear(768, 2)
 		
 	def forward(self, inputs, train = True):
+		token_lengths = [len(inp['tokens']) for inp in inputs]
+		token_max_length = max(token_lengths)
+		for i in range(len(inputs)):
+			inputs[i]['input_tokens'].extend([0] * (token_max_length - len(inputs[i]['tokens'])))
+			inputs[i]['input_mask'].extend([0] * (token_max_length - len(inputs[i]['tokens'])))
+			inputs[i]['segment_ids'].extend([0] * (token_max_length - len(inputs[i]['tokens'])))
 		input_ids = torch.tensor([inp['input_tokens'] for inp in inputs], dtype = torch.long).to(self.device)
 		input_mask = torch.tensor([inp['input_mask'] for inp in inputs], dtype = torch.long).to(self.device)
 		segment_ids = torch.tensor([inp['segment_ids'] for inp in inputs], dtype = torch.long).to(self.device)
@@ -77,10 +83,10 @@ class Model(nn.Module):
 	        prediction, span = self._scores_to_text(paragraphs[i], _s, _e)
 	        predictions.append(prediction)
 	        spans.append(span)
-	    if debug:
-		    print(predictions)
-		    print(answers)
-		    print('---------------------')
+	    #if debug:
+		print(predictions)
+		print(answers)
+		print('---------------------')
 	    f1, em = self.evaluate_predictions(predictions, answers)
 	    return f1, em
 
