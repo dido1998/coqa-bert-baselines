@@ -6,7 +6,7 @@ import numpy as np
 
 
 class Model(nn.Module):
-	def __init__(self, config, model, device):
+	def __init__(self, config, model, device, tokenizer):
 		super(Model, self).__init__()
 		self.device = device
 		self.config = config
@@ -15,6 +15,7 @@ class Model(nn.Module):
 			self.pretrained_model = model[0].from_pretrained(config['model_path']).to(device)
 		else:
 			self.pretrained_model = model[0].from_pretrained(model[2]).to(device)
+		self.pretrained_model.resize_token_embeddings(len(tokenizer))
 		self.pretrained_model.train()
 		self.qa_outputs = nn.Linear(768, 2)
 		

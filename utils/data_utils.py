@@ -15,7 +15,7 @@ def prepare_datasets(config, tokenizer_model):
     devset = CoQADataset(config['devset'])
     devset.chunk_paragraphs(tokenizer)
     devloader = CustomDataLoader(devset, config['batch_size'])
-    return trainloader, devloader
+    return trainloader, devloader, tokenizer
 def get_file_contents(filename, encoding='utf-8'):
     with io.open(filename, encoding=encoding) as f:
         content = f.read()

@@ -17,7 +17,7 @@ class ModelHandler():
 	def __init__(self, config):
 		self.config = config
 		tokenizer_model = MODELS[config['model_name']]
-		self.train_loader, self.dev_loader = prepare_datasets(config, tokenizer_model)
+		self.train_loader, self.dev_loader, tokenizer = prepare_datasets(config, tokenizer_model)
 		self._n_dev_batches = len(self.dev_loader.dataset) // config['batch_size']
 		self._n_train_batches = len(self.train_loader.dataset) // config['batch_size']
 		if config['cuda']:
@@ -31,7 +31,7 @@ class ModelHandler():
 		self._dev_f1 = AverageMeter()
 		self._dev_em = AverageMeter()
 
-		self.model = Model(config, MODELS[config['model_name']], self.device).to(self.device)
+		self.model = Model(config, MODELS[config['model_name']], self.device, tokenizer).to(self.device)
 		t_total = len(self.train_loader) // config['gradient_accumulation_steps'] * config['max_epochs']
 		self.optimizer = AdamW(self.model.parameters(), lr=config['lr'], eps = config['adam_epsilon'] )
 		#self.scheduler = WarmupLinearSchedule(self.optimizer, warmup_steps = config['warmup_steps'], t_total = t_total)
