@@ -62,7 +62,7 @@ class Model(nn.Module):
 			optimizer.zero_grad()
 		#scheduler.step()
 
-	def evaluate(self, score_s, score_e, paragraphs, answers):
+	def evaluate(self, score_s, score_e, paragraphs, answers, debug = False):
 	    if score_s.size(0) > 1:
 	        score_s = score_s.exp().squeeze()
 	        score_e = score_e.exp().squeeze()
@@ -77,9 +77,10 @@ class Model(nn.Module):
 	        prediction, span = self._scores_to_text(paragraphs[i], _s, _e)
 	        predictions.append(prediction)
 	        spans.append(span)
-	    print(predictions)
-	    print(answers)
-	    print('---------------------')
+	    if debug:
+		    print(predictions)
+		    print(answers)
+		    print('---------------------')
 	    f1, em = self.evaluate_predictions(predictions, answers)
 	    return f1, em
 
