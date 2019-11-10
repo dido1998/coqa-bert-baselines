@@ -128,13 +128,13 @@ class CoQADataset(Dataset):
                     c_known+=1
                     start = question_length + 1 + start
                     end = question_length + 1 + end
-                    _example  = {'tokens': tokens,'converted': converted_to_string, 'paragraph':paragraph, 'answer':tokens[start : end + 1], 'question':ex['annotated_question']['word'], 'span':ex['answer_span'] ,'input_tokens':input_ids, 'input_mask':input_mask, 'segment_ids':segment_ids, 'start':start, 'end':end}
-                    self.chunked_examples.append(_example)
+                    
                 else:
                     c_unknown+=1
                     start = len(tokens) - 1
                     end = len(tokens) - 1
-                
+                _example  = {'tokens': tokens,'converted': converted_to_string, 'paragraph':paragraph, 'answer':tokens[start : end + 1], 'question':ex['annotated_question']['word'], 'span':ex['answer_span'] ,'input_tokens':input_ids, 'input_mask':input_mask, 'segment_ids':segment_ids, 'start':start, 'end':end}
+                self.chunked_examples.append(_example)
         print(c_unknown)
         print(c_known)
 
