@@ -107,7 +107,7 @@ class CoQADataset(Dataset):
                 tokens.append('[SEP]')
                 segment_ids.append(0)
                 
-                tokenizer.add_tokens(paragraph[span[0]:span[0] + span[1]])
+                tokenizer.add_tokens(paragraph[spans[0]:spans[0] + spans[1]])
                 tokens.extend(paragraph[spans[0]:spans[0] + spans[1]])
                 segment_ids.extend([1] * spans[1])
                 if spans[2] == 1:
