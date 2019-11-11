@@ -82,6 +82,7 @@ class CoQADataset(Dataset):
                 continue
             doc_length_available = 512 - question_length - 1
             paragraph = self.paragraphs[ex['paragraph_id']]['annotated_context']['word']
+            paragraph = [p.lower() for p in paragraph]
             paragraph_length = len(paragraph)
             start_offset = 0
             doc_spans = []
@@ -105,9 +106,8 @@ class CoQADataset(Dataset):
 
                 tokens.append('[SEP]')
                 segment_ids.append(0)
-                for k in range(spans[0], spans[0]+spans[1]):
-                    paragraph[k] = paragraph[k].lower()
-                    tokenizer.add_tokens([paragraph[k]])
+                
+                tokenizer.add_tokens(paragraph[span[0]:span[0] + span[1]])
                 tokens.extend(paragraph[spans[0]:spans[0] + spans[1]])
                 segment_ids.extend([1] * spans[1])
                 if spans[2] == 1:
@@ -133,10 +133,9 @@ class CoQADataset(Dataset):
                     c_unknown+=1
                     start = len(tokens) - 1
                     end = len(tokens) - 1
-                _example  = {'tokens': tokens,'converted': converted_to_string, 'paragraph':paragraph, 'answer':tokens[start : end + 1], 'question':ex['annotated_question']['word'], 'span':ex['answer_span'] ,'input_tokens':input_ids, 'input_mask':input_mask, 'segment_ids':segment_ids, 'start':start, 'end':end}
+                _example  = {'tokens': tokens, 'answer':tokens[start : end + 1] ,'input_tokens':input_ids, 'input_mask':input_mask, 'segment_ids':segment_ids, 'start':start, 'end':end}
                 self.chunked_examples.append(_example)
-        print(c_unknown)
-        print(c_known)
+       
 
 
     def __len__(self):
