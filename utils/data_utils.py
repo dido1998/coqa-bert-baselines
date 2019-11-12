@@ -164,9 +164,9 @@ class CoQADataset(Dataset):
                 if ex['answer'] == 'no' and tokens[start]!='no':
                     start = no_index
                     end = no_index
-                              _example  = {'tokens': tokens, 'answer':tokens[start : end + 1],'actual_answer':ex['answer'] ,'input_tokens':input_ids, 'input_mask':input_mask, 'segment_ids':segment_ids, 'start':start, 'end':end}
+                
+                _example  = {'tokens': tokens, 'answer':tokens[start : end + 1],'actual_answer':ex['answer'] ,'input_tokens':input_ids, 'input_mask':input_mask, 'segment_ids':segment_ids, 'start':start, 'end':end}
                 self.chunked_examples.append(_example)
-
     def __len__(self):
         return len(self.chunked_examples)
 
