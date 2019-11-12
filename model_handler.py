@@ -4,12 +4,15 @@ from utils.data_utils import prepare_datasets
 from utils.eval_utils import AverageMeter
 from model import Model
 from transformers import *
+from SpanBERT.code.pytorch_pretrained_bert import BertModel as SpanBertModel
+from SpanBERT.code.pytorch_pretrained_bert import BertTokenizer as SpanBertTokenizer
 import time
 import os
 
 MODELS = {'BERT':(BertModel,       BertTokenizer,       'bert-base-uncased'),
           'DistilBERT':(DistilBertModel, DistilBertTokenizer, 'distilbert-base-uncased'),
-          'RoBERTa':(RobertaModel,    RobertaTokenizer,    'roberta-base')}
+          'RoBERTa':(RobertaModel,    RobertaTokenizer,    'roberta-base'),
+          'SpanBERT':(SpanBertModel, SpanBertTokenizer, 'spanbert-base-cased')}
 
 
 
@@ -59,7 +62,7 @@ class ModelHandler():
 			if not self.restored:
 				self.train_loader.prepare()	 
 			self.restored = False
-			
+
 			self._run_epoch(self.train_loader, training=True, verbose=self.config['verbose'])
 			format_str = "Training Epoch {} -- Loss: {:0.4f}, F1: {:0.2f}, EM: {:0.2f} --"
 			print(format_str.format(self._epoch, self._train_loss.mean(),
