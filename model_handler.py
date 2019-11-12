@@ -4,15 +4,13 @@ from utils.data_utils import prepare_datasets
 from utils.eval_utils import AverageMeter
 from model import Model
 from transformers import *
-from span_bert import BertModel as SpanBertModel
-from span_bert import BertTokenizer as SpanBertTokenizer
 import time
 import os
 
 MODELS = {'BERT':(BertModel,       BertTokenizer,       'bert-base-uncased'),
           'DistilBERT':(DistilBertModel, DistilBertTokenizer, 'distilbert-base-uncased'),
           'RoBERTa':(RobertaModel,    RobertaTokenizer,    'roberta-base'),
-          'SpanBERT':(SpanBertModel, SpanBertTokenizer, 'spanbert-base-cased')}
+          'SpanBERT':(BertModel, BertTokenizer, 'spanbert-base-cased')}
 
 
 
