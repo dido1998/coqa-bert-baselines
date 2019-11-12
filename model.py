@@ -12,7 +12,7 @@ class Model(nn.Module):
 		self.device = device
 		self.config = config
 
-		if config['model_path'] is not None:
+		if config['model_path'] is not None or config['model_name'] == 'SpanBERT':
 			self.pretrained_model = model[0].from_pretrained(config['model_path']).to(device)
 		else:
 			self.pretrained_model = model[0].from_pretrained(model[2]).to(device)
