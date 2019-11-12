@@ -5,6 +5,7 @@ from transformers import *
 import numpy as np
 
 
+
 class Model(nn.Module):
 	def __init__(self, config, model, device, tokenizer):
 		super(Model, self).__init__()

@@ -84,7 +84,7 @@ class CoQADataset(Dataset):
             if model_name == 'RoBERTa':
                 doc_length_available = doc_length_available - 3
             paragraph = self.paragraphs[ex['paragraph_id']]['annotated_context']['word']
-            if model_name != 'RoBERTa':
+            if model_name != 'RoBERTa' and model_name != 'SpanBERT':
                 paragraph = [p.lower() for p in paragraph]
             paragraph_length = len(paragraph)
             start_offset = 0
@@ -107,7 +107,7 @@ class CoQADataset(Dataset):
                     tokenizer.add_tokens(['<s>'])
                 for q in ex['annotated_question']['word']:
                     segment_ids.append(0)
-                    if model_name == 'RoBERTa':
+                    if model_name == 'RoBERTa' or model_name == 'SpanBERT':
                         tokens.append(q)
                         tokenizer.add_tokens([q])
                     else:

@@ -1,5 +1,6 @@
 import argparse
 from model_handler import ModelHandler
+from utils.download import download_model
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -38,7 +39,9 @@ parser.add_argument("--warmup_steps", default=2, type=int,
 
 args = vars(parser.parse_args())
 
-
+if args['model_name'] == 'SpanBERT':
+	download_model()
+	args['model_path'] = 'tmp_' 
 
 
 # TODO: cuda check
