@@ -26,7 +26,7 @@ class Model(nn.Module):
 		start_positions = torch.tensor([inp['start'] for inp in inputs], dtype = torch.long).to(self.device)
 		end_positions = torch.tensor([inp['end'] for inp in inputs], dtype = torch.long).to(self.device)
 
-		if self.config['model_name'] is 'BERT':
+		if self.config['model_name'] == 'BERT':
 			print('hello')
 			outputs = self.pretrained_model(input_ids, attention_mask = input_mask, token_type_ids = segment_ids)
 		else:
