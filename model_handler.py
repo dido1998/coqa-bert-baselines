@@ -4,8 +4,8 @@ from utils.data_utils import prepare_datasets
 from utils.eval_utils import AverageMeter
 from model import Model
 from transformers import *
-from SpanBERT.code.pytorch_pretrained_bert import BertModel as SpanBertModel
-from SpanBERT.code.pytorch_pretrained_bert import BertTokenizer as SpanBertTokenizer
+from span_bert import BertModel as SpanBertModel
+from span_bert import BertTokenizer as SpanBertTokenizer
 import time
 import os
 
