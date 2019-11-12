@@ -59,10 +59,6 @@ class ModelHandler():
 			if not self.restored:
 				self.train_loader.prepare()	 
 			self.restored = False
-			self._run_epoch(self.train_loader, training=True, verbose=self.config['verbose'])
-			format_str = "Training Epoch {} -- Loss: {:0.4f}, F1: {:0.2f}, EM: {:0.2f} --"
-			print(format_str.format(self._epoch, self._train_loss.mean(),
-			self._train_f1.mean(), self._train_em.mean()))
 			print("\n>>> Dev Epoch: [{} / {}]".format(self._epoch, self.config['max_epochs']))
 			self.dev_loader.prepare()
 			self._run_epoch(self.dev_loader, training=False, verbose=self.config['verbose'], save = False)
@@ -75,6 +71,11 @@ class ModelHandler():
 			    self._best_em = self._dev_em.mean()
 			    print("!!! Updated: F1: {:0.2f}, EM: {:0.2f}".format(self._best_f1, self._best_em))
 			self._reset_metrics()
+			self._run_epoch(self.train_loader, training=True, verbose=self.config['verbose'])
+			format_str = "Training Epoch {} -- Loss: {:0.4f}, F1: {:0.2f}, EM: {:0.2f} --"
+			print(format_str.format(self._epoch, self._train_loss.mean(),
+			self._train_f1.mean(), self._train_em.mean()))
+			
 			self.save(self._epoch)
 
 	def restore(self):
