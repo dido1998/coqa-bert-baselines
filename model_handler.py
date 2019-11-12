@@ -10,7 +10,7 @@ import os
 MODELS = {'BERT':(BertModel,       BertTokenizer,       'bert-base-uncased'),
           'DistilBERT':(DistilBertModel, DistilBertTokenizer, 'distilbert-base-uncased'),
           'RoBERTa':(RobertaModel,    RobertaTokenizer,    'roberta-base'),
-          'SpanBERT':(BertModel, BertTokenizer, 'spanbert-base-cased')}
+          'SpanBERT':(BertModel, BertTokenizer, 'bert-base-cased')}
 
 
 
