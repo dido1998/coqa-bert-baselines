@@ -27,8 +27,10 @@ class Model(nn.Module):
 		end_positions = torch.tensor([inp['end'] for inp in inputs], dtype = torch.long).to(self.device)
 
 		if self.config['model_name'] is 'BERT':
+			print('hello')
 			outputs = self.pretrained_model(input_ids, attention_mask = input_mask, token_type_ids = segment_ids)
 		else:
+			print('world')
 			outputs = self.pretrained_model(input_ids, attention_mask = input_mask) # DistilBERT and RoBERTa do not use segment_ids 
 		sequence_output = outputs[0]
 		logits = self.qa_outputs(sequence_output)
