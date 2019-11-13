@@ -1,5 +1,6 @@
 import argparse
 from model_handler import ModelHandler
+from utils.download import download_model
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -7,7 +8,7 @@ def str2bool(v):
     elif v.lower() in ('no', 'false', 'f', 'n', '0'):
         return False
     else:
-    	raise argparse.ArgumentTypeError('Boolean value expected.')
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--trainset', type = str, default = None, help = 'training dataset file')
@@ -31,14 +32,14 @@ parser.add_argument('--gradient_accumulation_steps', type=int, default=2,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")
 parser.add_argument("--adam_epsilon", default=1e-8, type=float,
                     help="Epsilon for Adam optimizer.")
-parser.add_argument("--max_grad_norm", default=1.0, type=float,
-                    help="Max gradient norm.")
-parser.add_argument("--warmup_steps", default=2, type=int,
-					help="Linear warmup over warmup_steps.")
+
+
 
 args = vars(parser.parse_args())
 
-
+if args['model_name'] == 'SpanBERT':
+    download_model()
+    args['model_path'] = 'tmp_' 
 
 
 # TODO: cuda check

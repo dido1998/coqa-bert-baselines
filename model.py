@@ -5,8 +5,9 @@ from transformers import *
 import numpy as np
 
 
+
 class Model(nn.Module):
-	def __init__(self, config, model, device):
+	def __init__(self, config, model, device, tokenizer):
 		super(Model, self).__init__()
 		self.device = device
 		self.config = config
@@ -15,6 +16,7 @@ class Model(nn.Module):
 			self.pretrained_model = model[0].from_pretrained(config['model_path']).to(device)
 		else:
 			self.pretrained_model = model[0].from_pretrained(model[2]).to(device)
+		self.pretrained_model.resize_token_embeddings(len(tokenizer))
 		self.pretrained_model.train()
 		self.qa_outputs = nn.Linear(768, 2)
 		
@@ -25,7 +27,7 @@ class Model(nn.Module):
 		start_positions = torch.tensor([inp['start'] for inp in inputs], dtype = torch.long).to(self.device)
 		end_positions = torch.tensor([inp['end'] for inp in inputs], dtype = torch.long).to(self.device)
 
-		if self.config['model_name'] is 'BERT':
+		if self.config['model_name'] == 'BERT' or self.config['model_name']=='SpanBERT':
 			outputs = self.pretrained_model(input_ids, attention_mask = input_mask, token_type_ids = segment_ids)
 		else:
 			outputs = self.pretrained_model(input_ids, attention_mask = input_mask) # DistilBERT and RoBERTa do not use segment_ids 
@@ -56,12 +58,11 @@ class Model(nn.Module):
 		
 		
 		if (step + 1) % self.config['gradient_accumulation_steps']:
-			nn.utils.clip_grad_norm_(self.parameters(), self.config['grad_clip'])
+			grad_norm = nn.utils.clip_grad_norm_(self.parameters(), self.config['grad_clip'])
 			optimizer.step()
 			optimizer.zero_grad()
-		#scheduler.step()
 
-	def evaluate(self, score_s, score_e, paragraphs, answers):
+	def evaluate(self, score_s, score_e, paragraphs, answers, debug = False):
 	    if score_s.size(0) > 1:
 	        score_s = score_s.exp().squeeze()
 	        score_e = score_e.exp().squeeze()
@@ -76,7 +77,7 @@ class Model(nn.Module):
 	        prediction, span = self._scores_to_text(paragraphs[i], _s, _e)
 	        predictions.append(prediction)
 	        spans.append(span)
-	    print(predictions)
+	    answers = [[' '.join(a)] for a in answers]
 	    f1, em = self.evaluate_predictions(predictions, answers)
 	    return f1, em
 

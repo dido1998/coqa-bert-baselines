@@ -10,12 +10,12 @@ import math
 def prepare_datasets(config, tokenizer_model):
     tokenizer = tokenizer_model[1].from_pretrained(tokenizer_model[2])
     trainset = CoQADataset(config['trainset'])
-    trainset.chunk_paragraphs(tokenizer)
+    trainset.chunk_paragraphs(tokenizer, config['model_name'])
     trainloader = CustomDataLoader(trainset, config['batch_size'])
     devset = CoQADataset(config['devset'])
-    devset.chunk_paragraphs(tokenizer)
+    devset.chunk_paragraphs(tokenizer, config['model_name'])
     devloader = CustomDataLoader(devset, config['batch_size'])
-    return trainloader, devloader
+    return trainloader, devloader, tokenizer
 def get_file_contents(filename, encoding='utf-8'):
     with io.open(filename, encoding=encoding) as f:
         content = f.read()
@@ -73,13 +73,21 @@ class CoQADataset(Dataset):
         self.chunked_examples = []
         
 
-    def chunk_paragraphs(self, tokenizer):
+    def chunk_paragraphs(self, tokenizer, model_name):
+        c_unknown = 0
+        c_known = 0
+        dis = 0
         for i, ex in enumerate(self.examples):
             question_length = len(ex['annotated_question']['word'])
             if question_length > 350: # TODO provide from config
                 continue
-            doc_length_available = 512 - question_length - 1
+            doc_length_available = 512 - question_length - 3
+            if model_name == 'RoBERTa':
+                doc_length_available = doc_length_available - 3
+            
             paragraph = self.paragraphs[ex['paragraph_id']]['annotated_context']['word']
+            if model_name != 'RoBERTa' and model_name != 'SpanBERT':
+                paragraph = [p.lower() for p in paragraph]
             paragraph_length = len(paragraph)
             start_offset = 0
             doc_spans = []
@@ -96,20 +104,42 @@ class CoQADataset(Dataset):
             for spans in doc_spans:
                 segment_ids = []
                 tokens = []
+                if model_name == 'RoBERTa':
+                    tokens.append('<s>')
                 for q in ex['annotated_question']['word']:
                     segment_ids.append(0)
-                    tokens.append(q)
+                    if model_name == 'RoBERTa' or model_name == 'SpanBERT':
+                        tokens.append(q)
+                        tokenizer.add_tokens([q])
+                    else:
+                        tokens.append(q.lower())
+                        tokenizer.add_tokens([q.lower()])
 
-                tokens.append('[SEP]')
-                segment_ids.append(0)
-
+                if model_name == 'RoBERTa':
+                    tokens.extend(['</s>'])
+                else:    
+                    tokens.append('[SEP]')
+                    segment_ids.append(0)
+                
+                tokenizer.add_tokens(paragraph[spans[0]:spans[0] + spans[1]])
                 tokens.extend(paragraph[spans[0]:spans[0] + spans[1]])
                 segment_ids.extend([1] * spans[1])
+                yes_index = len(tokens)
+                tokens.append('yes')
+                segment_ids.append(1)
+                no_index = len(tokens)
+                tokens.append('no')
+                segment_ids.append(1)
+
                 if spans[2] == 1:
-                    tokens.append('unknown')
+                    tokens.append('<unknown>')
+                    tokenizer.add_tokens(['<unknown>'])
                     segment_ids.append(1)
+                if model_name == 'RoBERTa':
+                    tokens.append('</s>')
                 input_mask = [1] * len(tokens)
                 input_ids = tokenizer.convert_tokens_to_ids(tokens)
+                converted_to_string = tokenizer.convert_ids_to_tokens(input_ids)
                 input_ids.extend([0]*(512 - len(tokens)))
                 input_mask.extend([0] * (512 - len(tokens)))
                 segment_ids.extend([0] * (512 - len(tokens)))
@@ -118,16 +148,23 @@ class CoQADataset(Dataset):
                 end = ex['answer_span'][1]
 
                 if start >= spans[0] and end <= spans[1]:
+                    c_known+=1
                     start = question_length + 1 + start
                     end = question_length + 1 + end
+                    
                 else:
+                    c_unknown+=1
                     start = len(tokens) - 1
                     end = len(tokens) - 1
-                _example  = {'tokens': tokens,'paragraph':paragraph, 'answer':tokens[start : end + 1], 'question':ex['annotated_question']['word'], 'span':ex['answer_span'] ,'input_tokens':input_ids, 'input_mask':input_mask, 'segment_ids':segment_ids, 'start':start, 'end':end}
+                if ex['answer'] == 'yes' and tokens[start]!='yes':
+                    start = yes_index
+                    end = yes_index
+                if ex['answer'] == 'no' and tokens[start]!='no':
+                    start = no_index
+                    end = no_index
+                
+                _example  = {'tokens': tokens, 'answer':tokens[start : end + 1],'actual_answer':ex['answer'] ,'input_tokens':input_ids, 'input_mask':input_mask, 'segment_ids':segment_ids, 'start':start, 'end':end}
                 self.chunked_examples.append(_example)
-
-
-
     def __len__(self):
         return len(self.chunked_examples)
 
@@ -170,17 +207,8 @@ if __name__=='__main__':
     from transformers import *
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
     dataset = CoQADataset('/home/aniket/coqa-bert-baselines/data/coqa.train.json')
-    dataset.chunk_paragraphs(tokenizer)
-
+    dataset.chunk_paragraphs(tokenizer, 'BERT')
     dataloader = CustomDataLoader(dataset, 4)
     dataloader.prepare()
-    c = 0
-    while dataloader.batch_state < len(dataloader):
-        d = dataloader.get()
+    
 
-        print(dataloader.batch_state)
-        #if dataloader.batch_state > 30000:
-        #    print(d)
-        print('------------------')
-        c+=1
-    print(c)
