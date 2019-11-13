@@ -70,4 +70,4 @@ All the results are based on `n_history = 2`:
 
 ## Contacts
 
-For any issues/questions, you can open an issue or contact me at - `adidolkar123@gmail.com`
+For any issues/questions, you can open a GitHub issue or contact [me](www.aniketdidolkar.in/) directly. 
