@@ -25,40 +25,26 @@ To run the models use the following command -
 
 The ```arguments``` are as follows : 
 
---trainset : Path to the training file.
+| Arguments | Description |
+| ----------|-------------|
+| trainset | Path to the training file.|
+| devset | Path to the dev file. |
+| model_name | Name of the pretrained model to train (BERT|RoBERTa|DistilBERT|SpanBERT) |
 
---devset : Path to the dev file.
-
---model_name: Name of the pretrained model to train (BERT|RoBERTa|DistilBERT|SpanBERT)
-
---model_path: If the model has been downloaded already, you can specify the path here. If left none, the code will automatically download the pretrained models and run.
-
---save_state_dir: The state of the program is regularly stored in this folder. This is useful incase training stops abruptly in the middle, it will automatically restart training from where it stopped.
-
-
---pretrained_dir: The path from which to restore the entire state of the program.  This path should be the name of the same folder which you would have specified in `save_state_dir`
-
---cuda: whether to train on gpu
-
---debug: whether to print during training.
-
---n_history: history size to use. For more info read the [paper](https://arxiv.org/abs/1808.07042).
-
---batch_size: Batch size to be used for training and validation.
-
---shuffle: Whether to shuffle the dataset before each epoch.
-
---max_epochs: Number of epochs to train.
-
---lr: Learning rate to use.
-
---grad_clip: Maximum norm for gradients.
-
---verbose: Print updates every `verbose` epochs.
-
---gradient_accumulation_steps: Number of update steps to accumulate before performing a backward/update pass.
-
---adam_epsilon: Epsilon for Adam optimizer.
+| model_path| If the model has been downloaded already, you can specify the path here. If left none, the code will automatically download the pretrained models and run |
+| save_state_dir | The state of the program is regularly stored in this folder. This is useful incase training stops abruptly in the middle, it will automatically restart training from where it stopped |
+| pretrained_dir | The path from which to restore the entire state of the program.  This path should be the name of the same folder which you would have specified in `save_state_dir`. |
+| cuda | whether to train on gpu |
+| debug | whether to print during training. |
+| n_history | history size to use. For more info read the [paper](https://arxiv.org/abs/1808.07042). |
+| batch_size | Batch size to be used for training and validation. |
+| shuffle | Whether to shuffle the dataset before each epoch
+| max_epochs | Number of epochs to train. |
+| lr | Learning rate to use. |
+| grad_clip | Maximum norm for gradients |
+| verbose | Print updates every `verbose` epochs. |
+| gradient_accumulation_steps | Number of update steps to accumulate before performing a backward/update pass. |
+| adam_epsilon | Epsilon for Adam optimizer. |
 
 For the given experiments the following values were used:
 ```
@@ -74,6 +60,7 @@ The below experiments were conducted on [google colab](https://colab.research.go
 
 ## Results
 All the results are based on `n_history = 2`:
+
 |Model Name| Dev F1 | Dev EM |
 |----------|--------|--------|
 | BERT | 63.08 | 53.03 |
