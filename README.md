@@ -4,7 +4,7 @@ BERT baselines for extractive question answering on coqa (https://stanfordnlp.gi
 - [x] [BERT](https://arxiv.org/pdf/1810.04805.pdf)
 - [ ] [RoBERTa](https://arxiv.org/abs/1907.11692)
 - [x] [DistilBERT](https://github.com/huggingface/transformers/tree/master/examples/distillation)
-- [ ] [SpanBERT](https://arxiv.org/abs/1907.10529)
+- [x] [SpanBERT](https://arxiv.org/abs/1907.10529)
 
 Except `SpanBERT` all pretrained models are provided by [huggingface](https://github.com/huggingface/transformers). The `SpanBERT` model is provided by [facebookresearch](https://github.com/facebookresearch/SpanBERT). 
 
@@ -65,6 +65,7 @@ All the results are based on `n_history = 2`:
 
 |Model Name| Dev F1 | Dev EM |
 |----------|--------|--------|
+| `SpanBERT` | 63.74 | 53.42 |
 | `BERT` | 63.08 | 53.03 |
 | `DistilBERT` | 61.5 | 52.35 |
 
