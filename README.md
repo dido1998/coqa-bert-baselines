@@ -67,3 +67,7 @@ All the results are based on `n_history = 2`:
 |----------|--------|--------|
 | `BERT` | 63.08 | 53.03 |
 | `DistilBERT` | 61.5 | 52.35 |
+
+## Contacts
+
+For any issues/questions, you can open an issue or contact me at - `adidolkar123@gmail.com`
