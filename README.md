@@ -6,17 +6,19 @@ BERT baselines for extractive question answering on coqa (https://stanfordnlp.gi
 - [x] [DistilBERT](https://github.com/huggingface/transformers/tree/master/examples/distillation)
 - [ ] [SpanBERT](https://arxiv.org/abs/1907.10529)
 
+Except `SpanBERT` all pretrained models are provided by [huggingface](https://github.com/huggingface/transformers). The `SpanBERT` model is provided by [facebookresearch](https://github.com/facebookresearch/SpanBERT). 
+
 This repo builds upon the original code provided with the paper which can be found [here](https://github.com/stanfordnlp/coqa-baselines).
 
 ## Dataset
 
-The dataset can be downloaded from [here](https://stanfordnlp.github.io/coqa/). The dataset needs to be preprocessed to obtain 2 files - coqa.train.json and coqa.dev.json. You can either follow the steps provided in the [original repo](https://github.com/stanfordnlp/coqa-baselines) for preprocessing or download the preprocessed files directly from [here](https://drive.google.com/drive/folders/1XxKDaJegoj_gNv6pkXnFvya9TzborzTQ?usp=sharing). 
+The dataset can be downloaded from [here](https://stanfordnlp.github.io/coqa/). The dataset needs to be preprocessed to obtain 2 files - `coqa.train.json` and `coqa.dev.json`. You can either follow the steps provided in the [original repo](https://github.com/stanfordnlp/coqa-baselines) for preprocessing or download the preprocessed files directly from [here](https://drive.google.com/drive/folders/1XxKDaJegoj_gNv6pkXnFvya9TzborzTQ?usp=sharing). 
 
 ## Requirements
 
-torch : can be installed from [here](https://pytorch.org/). This code was tested with torch 0.3.0 and cuda 9.2.
+`torch` : can be installed from [here](https://pytorch.org/). This code was tested with torch 0.3.0 and cuda 9.2.
 
-transformers: can be installed from  [here](https://github.com/huggingface/transformers).
+`transformers`: can be installed from  [here](https://github.com/huggingface/transformers).
 
 ## Usage
 To run the models use the following command - 
@@ -29,8 +31,8 @@ The ```arguments``` are as follows :
 | ----------|-------------|
 | trainset | Path to the training file.|
 | devset | Path to the dev file. |
-| model_name | Name of the pretrained model to train (BERT|RoBERTa|DistilBERT|SpanBERT) |
-| model_path| If the model has been downloaded already, you can specify the path here. If left none, the code will automatically download the pretrained models and run |
+| model_name | Name of the pretrained model to train (`BERT`|`RoBERTa`|`DistilBERT`|`SpanBERT`) |
+| model_path| If the model has been downloaded already, you can specify the path here. If left none, the code will automatically download the pretrained models and run. |
 | save_state_dir | The state of the program is regularly stored in this folder. This is useful incase training stops abruptly in the middle, it will automatically restart training from where it stopped |
 | pretrained_dir | The path from which to restore the entire state of the program.  This path should be the name of the same folder which you would have specified in `save_state_dir`. |
 | cuda | whether to train on gpu |
@@ -46,6 +48,7 @@ The ```arguments``` are as follows :
 | adam_epsilon | Epsilon for Adam optimizer. |
 
 For the given experiments the following values were used:
+
 ```
 n_history = 2
 batch_size = 4 (Couldn't fit a batch size larger than this on the GPU)
@@ -62,5 +65,5 @@ All the results are based on `n_history = 2`:
 
 |Model Name| Dev F1 | Dev EM |
 |----------|--------|--------|
-| BERT | 63.08 | 53.03 |
-| DistilBERT | 61.5 | 52.35 |
+| `BERT` | 63.08 | 53.03 |
+| `DistilBERT` | 61.5 | 52.35 |
