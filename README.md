@@ -68,6 +68,6 @@ All the results are based on `n_history = 2`:
 | `BERT` | 63.08 | 53.03 |
 | `DistilBERT` | 61.5 | 52.35 |
 
-## Contacts
+## Contact
 
 For any issues/questions, you can open a GitHub issue or contact [me](www.aniketdidolkar.in/) directly. 
