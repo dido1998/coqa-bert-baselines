@@ -106,7 +106,6 @@ class CoQADataset(Dataset):
                 tokens = []
                 if model_name == 'RoBERTa':
                     tokens.append('<s>')
-                    tokenizer.add_tokens(['<s>'])
                 for q in ex['annotated_question']['word']:
                     segment_ids.append(0)
                     if model_name == 'RoBERTa' or model_name == 'SpanBERT':
@@ -117,8 +116,7 @@ class CoQADataset(Dataset):
                         tokenizer.add_tokens([q.lower()])
 
                 if model_name == 'RoBERTa':
-                    tokens.extend(['</s>', '</s>'])
-                    tokenizer.add_tokens(['</s>'])
+                    tokens.extend(['</s>'])
                 else:    
                     tokens.append('[SEP]')
                     segment_ids.append(0)
