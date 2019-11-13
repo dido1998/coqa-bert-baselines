@@ -31,7 +31,7 @@ The ```arguments``` are as follows :
 | ----------|-------------|
 | trainset | Path to the training file.|
 | devset | Path to the dev file. |
-| model_name | Name of the pretrained model to train (`BERT`|`RoBERTa`|`DistilBERT`|`SpanBERT`) |
+| model_name | Name of the pretrained model to train (`BERT`,`RoBERTa`,`DistilBERT`,`SpanBERT`) |
 | model_path| If the model has been downloaded already, you can specify the path here. If left none, the code will automatically download the pretrained models and run. |
 | save_state_dir | The state of the program is regularly stored in this folder. This is useful incase training stops abruptly in the middle, it will automatically restart training from where it stopped |
 | pretrained_dir | The path from which to restore the entire state of the program.  This path should be the name of the same folder which you would have specified in `save_state_dir`. |
