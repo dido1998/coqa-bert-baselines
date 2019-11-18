@@ -116,7 +116,7 @@ class CoQADataset(Dataset):
                         tokenizer.add_tokens([q.lower()])
 
                 if model_name == 'RoBERTa':
-                    tokens.extend(['</s>'])
+                    tokens.extend(['</s>', '</s>'])
                 else:    
                     tokens.append('[SEP]')
                     segment_ids.append(0)
