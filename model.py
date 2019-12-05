@@ -28,10 +28,8 @@ class Model(nn.Module):
 		end_positions = torch.tensor([inp['end'] for inp in inputs], dtype = torch.long).to(self.device)
 
 		if self.config['model_name'] == 'BERT' or self.config['model_name']=='SpanBERT':
-			#print('hello')
 			outputs = self.pretrained_model(input_ids, attention_mask = input_mask, token_type_ids = segment_ids)
 		else:
-			#print('world')
 			outputs = self.pretrained_model(input_ids, attention_mask = input_mask) # DistilBERT and RoBERTa do not use segment_ids 
 		sequence_output = outputs[0]
 		logits = self.qa_outputs(sequence_output)
@@ -61,10 +59,8 @@ class Model(nn.Module):
 		
 		if (step + 1) % self.config['gradient_accumulation_steps']:
 			grad_norm = nn.utils.clip_grad_norm_(self.parameters(), self.config['grad_clip'])
-			#print(grad_norm)
 			optimizer.step()
 			optimizer.zero_grad()
-		#scheduler.step()
 
 	def evaluate(self, score_s, score_e, paragraphs, answers, debug = False):
 	    if score_s.size(0) > 1:
@@ -81,10 +77,6 @@ class Model(nn.Module):
 	        prediction, span = self._scores_to_text(paragraphs[i], _s, _e)
 	        predictions.append(prediction)
 	        spans.append(span)
-	    #if debug:
-	    #print(predictions)
-	    #print(answers)
-	    #print('---------------------')
 	    answers = [[' '.join(a)] for a in answers]
 	    f1, em = self.evaluate_predictions(predictions, answers)
 	    return f1, em

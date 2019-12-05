@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 import numpy as np
 from random import shuffle
 import math
+from tqdm import tqdm
 
 def prepare_datasets(config, tokenizer_model):
     tokenizer = tokenizer_model[1].from_pretrained(tokenizer_model[2])
@@ -77,13 +78,13 @@ class CoQADataset(Dataset):
         c_unknown = 0
         c_known = 0
         dis = 0
-        for i, ex in enumerate(self.examples):
+        for i, ex in tqdm(enumerate(self.examples)):
             question_length = len(ex['annotated_question']['word'])
             if question_length > 350: # TODO provide from config
                 continue
             doc_length_available = 512 - question_length - 3
             if model_name == 'RoBERTa':
-                doc_length_available = doc_length_available - 3
+                doc_length_available = doc_length_available - 30
             
             paragraph = self.paragraphs[ex['paragraph_id']]['annotated_context']['word']
             if model_name != 'RoBERTa' and model_name != 'SpanBERT':
@@ -106,9 +107,12 @@ class CoQADataset(Dataset):
                 tokens = []
                 if model_name == 'RoBERTa':
                     tokens.append('<s>')
+                ques = ''
+                para = ''
                 for q in ex['annotated_question']['word']:
                     segment_ids.append(0)
                     if model_name == 'RoBERTa' or model_name == 'SpanBERT':
+                        ques += q + ' '
                         tokens.append(q)
                         tokenizer.add_tokens([q])
                     else:
@@ -116,30 +120,37 @@ class CoQADataset(Dataset):
                         tokenizer.add_tokens([q.lower()])
 
                 if model_name == 'RoBERTa':
-                    tokens.extend(['</s>'])
-                else:    
+                    tokens.append('</s>')
+                    tokens.append('</s>')
+                else:  
                     tokens.append('[SEP]')
                     segment_ids.append(0)
                 
                 tokenizer.add_tokens(paragraph[spans[0]:spans[0] + spans[1]])
                 tokens.extend(paragraph[spans[0]:spans[0] + spans[1]])
+                para += ' '.join(paragraph[spans[0]:spans[0] + spans[1]])
                 segment_ids.extend([1] * spans[1])
                 yes_index = len(tokens)
                 tokens.append('yes')
+                para += 'yes' + ' '
                 segment_ids.append(1)
                 no_index = len(tokens)
                 tokens.append('no')
+                para+= 'no '
                 segment_ids.append(1)
 
                 if spans[2] == 1:
                     tokens.append('<unknown>')
                     tokenizer.add_tokens(['<unknown>'])
+                    para+='<unknown> '
                     segment_ids.append(1)
-                if model_name == 'RoBERTa':
-                    tokens.append('</s>')
+                
                 input_mask = [1] * len(tokens)
-                input_ids = tokenizer.convert_tokens_to_ids(tokens)
-                converted_to_string = tokenizer.convert_ids_to_tokens(input_ids)
+                if model_name == 'RoBERTa':
+                    input_ids = tokenizer.encode(ques, text_pair = para, add_special_tokens = True)
+                else:
+                    input_ids = tokenizer.convert_tokens_to_ids(tokens)
+                #converted_to_string = tokenizer.convert_ids_to_tokens(input_ids)
                 input_ids.extend([0]*(512 - len(tokens)))
                 input_mask.extend([0] * (512 - len(tokens)))
                 segment_ids.extend([0] * (512 - len(tokens)))
@@ -162,7 +173,9 @@ class CoQADataset(Dataset):
                 if ex['answer'] == 'no' and tokens[start]!='no':
                     start = no_index
                     end = no_index
-                
+                del para
+                del ques
+
                 _example  = {'tokens': tokens, 'answer':tokens[start : end + 1],'actual_answer':ex['answer'] ,'input_tokens':input_ids, 'input_mask':input_mask, 'segment_ids':segment_ids, 'start':start, 'end':end}
                 self.chunked_examples.append(_example)
     def __len__(self):
@@ -205,10 +218,12 @@ class CustomDataLoader:
 
 if __name__=='__main__':
     from transformers import *
-    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-    dataset = CoQADataset('/home/aniket/coqa-bert-baselines/data/coqa.train.json')
-    dataset.chunk_paragraphs(tokenizer, 'BERT')
+    tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
+    dataset = CoQADataset('/home/aniket/coqa/data/coqa.dev.json')
+    dataset.chunk_paragraphs(tokenizer, 'RoBERTa')
     dataloader = CustomDataLoader(dataset, 4)
     dataloader.prepare()
-    
+    view = dataloader.get()
+    print(view['actual_answer'])
+    print(view['tokens'][view['start']: view['end'] + 1])
 

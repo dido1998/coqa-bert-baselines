@@ -32,10 +32,8 @@ parser.add_argument('--gradient_accumulation_steps', type=int, default=2,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")
 parser.add_argument("--adam_epsilon", default=1e-8, type=float,
                     help="Epsilon for Adam optimizer.")
-parser.add_argument("--max_grad_norm", default=1.0, type=float,
-                    help="Max gradient norm.")
-parser.add_argument("--warmup_steps", default=2, type=int,
-					help="Linear warmup over warmup_steps.")
+
+
 
 args = vars(parser.parse_args())
 

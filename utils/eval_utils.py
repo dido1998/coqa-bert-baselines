@@ -55,7 +55,7 @@ class AverageMeter(object):
         return self.sum / self.count
 
 
-def compute_eval_metric(eval_metric, predictions, ground_truths, cross_eval=True):
+def compute_eval_metric(eval_metric, predictions, ground_truths, cross_eval=False):
     fns = {'f1': compute_f1_score,
            'em': compute_em_score}
 
