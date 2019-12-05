@@ -47,12 +47,12 @@ class ModelHandler():
 	def train(self):
 		if not self.restored:
 			print("\n>>> Dev Epoch: [{} / {}]".format(self._epoch, self.config['max_epochs']))
-			self._run_epoch(self.dev_loader, training=False, verbose=self.config['verbose'], save = False)
+			#self._run_epoch(self.dev_loader, training=False, verbose=self.config['verbose'], save = False)
 			
-			format_str = "Validation Epoch {} -- F1: {:0.2f}, EM: {:0.2f} --"
-			print(format_str.format(self._epoch, self._dev_f1.mean(), self._dev_em.mean()))
-			self._best_f1 = self._dev_f1.mean()
-			self._best_em = self._dev_em.mean()
+			#format_str = "Validation Epoch {} -- F1: {:0.2f}, EM: {:0.2f} --"
+			#print(format_str.format(self._epoch, self._dev_f1.mean(), self._dev_em.mean()))
+			#self._best_f1 = self._dev_f1.mean()
+			#self._best_em = self._dev_em.mean()
 		while self._stop_condition(self._epoch):
 			self._epoch += 1
 			print("\n>>> Train Epoch: [{} / {}]".format(self._epoch, self.config['max_epochs']))
