@@ -17,10 +17,7 @@ MODELS = {'BERT':(BertModel,       BertTokenizer,       'bert-base-uncased'),
 class ModelHandler():
 	def __init__(self, config):
 		self.config = config
-		tokenizer_model = MODELS[config['model_name']]
-		self.train_loader, self.dev_loader, tokenizer = prepare_datasets(config, tokenizer_model)
-		self._n_dev_batches = len(self.dev_loader.dataset) // config['batch_size']
-		self._n_train_batches = len(self.train_loader.dataset) // config['batch_size']
+		
 		if config['cuda']:
 			self.device = torch.device('cuda')
 		else:
@@ -41,8 +38,15 @@ class ModelHandler():
 		self._best_f1 = 0
 		self._best_em = 0
 		self.restored = False
+		self.data = None
+		self.data_converted = None
+		self.prev_state = 0
 		if config['pretrained_dir'] is not None:
 			self.restore()
+
+		self.train_dataset, self.eval_dataset = prepare_datasets(config, self.data, self.data_converted)
+		self._n_dev_batches = len(self.train_dataset) // config['batch_size']
+		self._n_train_batches = len(self.eval_dataset) // config['batch_size']
 
 	def train(self):
 		if not self.restored:
@@ -60,13 +64,13 @@ class ModelHandler():
 				self.train_loader.prepare()	 
 			self.restored = False
 
-			self._run_epoch(self.train_loader, training=True, verbose=self.config['verbose'])
+			self._run_epoch(self.train_dataset, training=True, verbose=self.config['verbose'])
 			format_str = "Training Epoch {} -- Loss: {:0.4f}, F1: {:0.2f}, EM: {:0.2f} --"
 			print(format_str.format(self._epoch, self._train_loss.mean(),
 			self._train_f1.mean(), self._train_em.mean()))
 			print("\n>>> Dev Epoch: [{} / {}]".format(self._epoch, self.config['max_epochs']))
 			self.dev_loader.prepare()
-			self._run_epoch(self.dev_loader, training=False, verbose=self.config['verbose'], save = False)
+			self._run_epoch(self.eval_dataset, training=False, verbose=self.config['verbose'], save = False)
 			format_str = "Validation Epoch {} -- F1: {:0.2f}, EM: {:0.2f} --"
 			print(format_str.format(self._epoch, self._dev_f1.mean(), self._dev_em.mean()))
 			
@@ -90,11 +94,9 @@ class ModelHandler():
 		self._n_train_examples = restored_params['train_examples']
 		self._best_f1 = restored_params['best_f1']
 		self._best_em = restored_params['best_em']
-		examples = restored_params['dataloader_examples']
-		batch_state = restored_params['dataloader_batch_state']
-		state = restored_params['dataloader_state']
-		self.train_loader.restore(examples, state, batch_state)
-
+		self.data = restored_params['data']
+		self.data_converted = restored_params['data_converted']
+		self.prev_state = restored_params['prev_state']
 		self.restored = True
 
 	def save(self, save_epoch_val):
@@ -121,16 +123,19 @@ class ModelHandler():
 			'optimizer':self.optimizer.state_dict(),
 			'best_f1':self._best_f1,
 			'best_em':self._best_em,
-			'dataloader_batch_state': self.train_loader.batch_state,
-			'dataloader_state':self.train_loader.state,
-			'dataloader_examples':self.train_loader.examples}
+			'data':self.train_dataset.data,
+			'data_converted':self.train_dataset.data_converted,
+			'prev_state':self.train_dataset.prev_state}
 		torch.save(save_dic, self.config['save_state_dir']+'/latest/model.pth')
 
 
 	def _run_epoch(self, data_loader, training=True, verbose=10, out_predictions=False, save = True):
 	    start_time = time.time()
-	    while data_loader.batch_state < len(data_loader):
-	        input_batch = data_loader.get()
+	    length = self._n_train_batches
+	    if not training:
+	    	length = self._n_dev_batches
+	    while data_loader.prev_state < length:
+	        input_batch = data_loader.next()
 	        res = self.model(input_batch, training)
 	        tr_loss = 0
 	        if training:

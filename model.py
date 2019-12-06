@@ -21,11 +21,11 @@ class Model(nn.Module):
 		self.qa_outputs = nn.Linear(768, 2)
 		
 	def forward(self, inputs, train = True):
-		input_ids = torch.tensor([inp['input_tokens'] for inp in inputs], dtype = torch.long).to(self.device)
-		input_mask = torch.tensor([inp['input_mask'] for inp in inputs], dtype = torch.long).to(self.device)
-		segment_ids = torch.tensor([inp['segment_ids'] for inp in inputs], dtype = torch.long).to(self.device)
-		start_positions = torch.tensor([inp['start'] for inp in inputs], dtype = torch.long).to(self.device)
-		end_positions = torch.tensor([inp['end'] for inp in inputs], dtype = torch.long).to(self.device)
+		input_ids = torch.tensor(inp['input_ids'], dtype = torch.long).to(self.device)
+		input_mask = torch.tensor(inp['input_mask'], dtype = torch.long).to(self.device)
+		segment_ids = torch.tensor(inp['segment_ids'], dtype = torch.long).to(self.device)
+		start_positions = torch.tensor(inp['start_positions'], dtype = torch.long).to(self.device)
+		end_positions = torch.tensor(inp['end_positions'], dtype = torch.long).to(self.device)
 
 		if self.config['model_name'] == 'BERT' or self.config['model_name']=='SpanBERT':
 			outputs = self.pretrained_model(input_ids, attention_mask = input_mask, token_type_ids = segment_ids)
