@@ -17,7 +17,7 @@ MODELS = {'BERT':(BertModel,       BertTokenizer,       'bert-base-uncased'),
 class ModelHandler():
 	def __init__(self, config):
 		self.config = config
-		
+		tokenizer_model = MODELS[config['model_name']]
 		if config['cuda']:
 			self.device = torch.device('cuda')
 		else:
