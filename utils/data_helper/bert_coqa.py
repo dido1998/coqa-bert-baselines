@@ -4,12 +4,12 @@ import tensorflow as tf
 import numpy as np
 import logging
 from collections import OrderedDict, defaultdict
-from sogou_mrc.model.base_model import BaseModel
-from sogou_mrc.train.trainer import Trainer
+from .base_model import BaseModel
+from .trainer import Trainer
 # from sogou_mrc.libraries.BertWrapper import BertModelHelper
-from sogou_mrc.nn.layers import BertEmbedding
-from sogou_mrc.libraries import modeling
-from sogou_mrc.libraries import optimization
+from .layers import BertEmbedding
+import modeling
+import optimization
 
 VERY_NEGATIVE_NUMBER = -1e29
 
@@ -43,7 +43,7 @@ class BertCoQA(BaseModel):
                                                           segment_ids=self.segment_ids, is_training=self.training,
                                                           use_one_hot_embeddings=False,
                                                           return_pool_output=True)
-        final_hidden_shape = modeling.get_shape_list(final_hidden, expected_rank=3)
+        final_hidden_shape = get_shape_list(final_hidden, expected_rank=3)
         batch_size = final_hidden_shape[0]
         seq_length = final_hidden_shape[1]
         hidden_size = final_hidden_shape[2]
@@ -122,7 +122,7 @@ class BertCoQA(BaseModel):
         masked_start_logits = start_logits * input_mask0 + (1 - input_mask0) * VERY_NEGATIVE_NUMBER
         masked_end_logits = end_logits * input_mask0 + (1 - input_mask0) * VERY_NEGATIVE_NUMBER
 
-        seq_length = modeling.get_shape_list(self.input_ids)[1]  # input_mask0 = tf.cast(self.input_mask, tf.float32)
+        seq_length = get_shape_list(self.input_ids)[1]  # input_mask0 = tf.cast(self.input_mask, tf.float32)
         start_masks = tf.one_hot(self.start_position, depth=seq_length, dtype=tf.float32)
         end_masks = tf.one_hot(self.end_position, depth=seq_length, dtype=tf.float32)
         start_masks = start_masks * tf.expand_dims(tf.cast(self.extractive_masks, tf.float32), axis=-1)
@@ -224,7 +224,7 @@ class BertCoQA(BaseModel):
                 elif activation == "tanh":
                     x = tf.tanh(x)
                 elif activation == "gelu":
-                    x = modeling.gelu(x)
+                    x = gelu(x)
         with tf.variable_scope("linear_layer" + str(layers)):
             w = tf.get_variable(
                 "w", [hidden_size, output_size],
@@ -236,7 +236,7 @@ class BertCoQA(BaseModel):
         return x
 
     def compile(self, learning_rate, num_train_steps, num_warmup_steps, use_tpu=False):
-        self.train_op = optimization.create_optimizer(self.loss, learning_rate, num_train_steps, num_warmup_steps,
+        self.train_op = create_optimizer(self.loss, learning_rate, num_train_steps, num_warmup_steps,
                                                       use_tpu)
 
     def train_and_evaluate(self, train_generator, eval_generator, evaluator, epochs=1, eposides=1,
