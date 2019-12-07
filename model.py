@@ -24,8 +24,8 @@ class Model(nn.Module):
 		input_ids = torch.tensor(inp['input_ids'], dtype = torch.long).to(self.device)
 		input_mask = torch.tensor(inp['input_mask'], dtype = torch.long).to(self.device)
 		segment_ids = torch.tensor(inp['segment_ids'], dtype = torch.long).to(self.device)
-		start_positions = torch.tensor(inp['start_positions'], dtype = torch.long).to(self.device)
-		end_positions = torch.tensor(inp['end_positions'], dtype = torch.long).to(self.device)
+		start_positions = torch.tensor(inp['start_position'], dtype = torch.long).to(self.device)
+		end_positions = torch.tensor(inp['end_position'], dtype = torch.long).to(self.device)
 
 		if self.config['model_name'] == 'BERT' or self.config['model_name']=='SpanBERT':
 			outputs = self.pretrained_model(input_ids, attention_mask = input_mask, token_type_ids = segment_ids)
