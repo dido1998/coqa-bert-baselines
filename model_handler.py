@@ -48,6 +48,7 @@ class ModelHandler():
 		self.train_dataset, self.eval_dataset = prepare_datasets(config, self.data)
 		self._n_dev_batches = len(self.train_dataset) // config['batch_size']
 		self._n_train_batches = len(self.eval_dataset) // config['batch_size']
+		self.batch_size = config['batch_size']
 
 	def train(self):
 		if not self.restored:
@@ -145,7 +146,7 @@ class ModelHandler():
 	        end_logits = res['end_logits']
 	        
 	        if training:
-	        	self.model.update(loss, self.optimizer, data_loader.batch_state)
+	        	self.model.update(loss, self.optimizer, data_loader.prev_state // self.batch_size)
 	        paragraphs = [inp['tokens'] for inp in input_batch]
 	        answers = [inp['answer'] for inp in input_batch]
 	        f1, em = self.model.evaluate(start_logits, end_logits, paragraphs, answers)
@@ -158,7 +159,7 @@ class ModelHandler():
 	            if save:
 	            	self.save(self._epoch - 1)
 	            mode = "train" if training else "dev"
-	            print(self.report(data_loader.batch_state, tr_loss, f1 * 100, em * 100, mode))
+	            print(self.report(data_loader.prev_state//self.batch_size, tr_loss, f1 * 100, em * 100, mode))
 	            print('used_time: {:0.2f}s'.format(time.time() - start_time))
 
 	def _update_metrics(self, loss, f1, em, batch_size, training=True):
