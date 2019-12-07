@@ -20,7 +20,7 @@ class Model(nn.Module):
 		self.pretrained_model.train()
 		self.qa_outputs = nn.Linear(768, 2)
 		
-	def forward(self, inputs, train = True):
+	def forward(self, inp, train = True):
 		input_ids = torch.tensor(inp['input_ids'], dtype = torch.long).to(self.device)
 		input_mask = torch.tensor(inp['input_mask'], dtype = torch.long).to(self.device)
 		segment_ids = torch.tensor(inp['segment_ids'], dtype = torch.long).to(self.device)
