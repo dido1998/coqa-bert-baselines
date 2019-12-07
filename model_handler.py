@@ -131,6 +131,8 @@ class ModelHandler():
 	    length = self._n_train_batches
 	    if not training:
 	    	length = self._n_dev_batches
+	    print(data_loader.prev_state)
+	    print(len(data_loader))
 	    while data_loader.prev_state < len(data_loader):
 	        input_batch = data_loader.next()
 	        res = self.model(input_batch, training)
