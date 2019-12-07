@@ -1,13 +1,15 @@
-from sogou_mrc.dataset.coqa import CoQAReader,CoQAEvaluator
-from sogou_mrc.libraries.BertWrapper import BertDataHelper
-from sogou_mrc.model.bert_coqa import BertCoQA
-from sogou_mrc.data.vocabulary import  Vocabulary
+from data_helper.coqa import CoQAReader
+from data_helper.BertWrapper import BertDataHelper
+from data_helper.bert_coqa import BertCoQA
+from data_helper.vocabulary import  Vocabulary
+from data_helper.batch_generator import BatchGenerator
+from random import shuffle
 import logging
 import sys
 
 
-def prepare_datasets(config, data = None, data_converted = None, prev_state):
-    train_dataset = CoQADataset(config['trainset'], config['batch_size'], config['n_history'], True, data, data_converted, prev_state)
+def prepare_datasets(config, data = None, prev_state = 0):
+    train_dataset = CoQADataset(config['trainset'], config['batch_size'], config['n_history'], True, data, prev_state)
     eval_dataset = CoQADataset(config['devset'], config['batch_size'], config['n_history'], False)
     return train_dataset, eval_dataset
 
@@ -26,42 +28,45 @@ def read_json(filename, encoding='utf-8'):
     contents = get_file_contents(filename, encoding=encoding)
     return json.loads(contents)
 
-class CoQADataset(Dataset):
+class CoQADataset():
     """CoQA dataset."""
 
-    def __init__(self, filename, batch_size, history_size, train = True, data = None, data_converted = None, prev_state = 0):
+    def __init__(self, filename, batch_size, history_size, train = True, data = None, prev_state = 0):
         #timer = Timer('Load %s' % filename)
-        self.data_converted = data_converted
         self.data = data
-        vocab = None
+        self.vocab = None
         self.prev_state = prev_state
+        self.batch_size = batch_size
+        self.train = train
+        bert_dir = '/home/aniket/coqa/uncased_L-12_H-768_A-12'
+        self.bert_data_helper = BertDataHelper(bert_dir)
         if data == None:
             data_reader = CoQAReader(history_size)
-            vocab = Vocabulary()
-            self.data = self.data_reader.read(filename, 'train' if train else 'dev')
-            bert_dir = 'uncased_L-12_H-768_A-12'
-            bert_data_helper = BertDataHelper(bert_dir)
-            train_data = bert_data_helper.convert(train_data,data='coqa')
-            self.data_converted = bert_data_helper.convert(train_data, data = 'coqa') 
+            self.vocab = Vocabulary()
+            self.data = data_reader.read(filename, 'train' if train else 'dev')
+            self.vocab.build_vocab(self.data)
+            shuffle(self.data)
         else:
-            vocab = Vocabulary()
-            vocab.build_vocab(self.data)
+            self.vocab = Vocabulary()
+            self.vocab.build_vocab(self.data)
 
-        self.batches = BatchGenerator(vocab, self.data_converted,training=train,batch_size=batch_size,
-            additional_fields=['input_ids','segment_ids','input_mask','start_position','end_position', 'question_mask','rationale_mask','yes_mask','extractive_mask','no_mask','unk_mask','qid'],
-            shuffle= True if data == None else False)
-        c = 0
-        while c < self.prev_state:
-            self.batches.next()
-        def init(self):
-            self.batches.init()
+        #self.batches = BatchGenerator(vocab, self.data_converted,training=train,batch_size=batch_size,
+        #    additional_fields=['input_ids','segment_ids','input_mask','start_position','end_position'],#, 'question_mask','rationale_mask','yes_mask','extractive_mask','no_mask','unk_mask','qid'],
+        #    shuffle= True if data == None else False)
         
-        def __len__(self):
-            return self.batches.instance_size()
+    def __len__(self):
+        return len(self.data)
         
-        def next(self):
-            self.prev_state+=1
-            return self.batches.next()
+    def next(self):
+        data_converted = self.bert_data_helper.convert(self.data[self.prev_state:self.prev_state + self.batch_size])
+        batch = BatchGenerator(self.vocab, data_converted, training = self.train, batch_size = self.batch_size, additional_fields=['input_ids','segment_ids','input_mask','start_position','end_position'],#, 'question_mask','rationale_mask','yes_mask','extractive_mask','no_mask','unk_mask','qid'],
+        shuffle=False)
+        self.prev_state+=self.batch_size
+        batch.init()
+        return batch.next()
 
     
 
+if __name__=='__main__':
+    dataset = CoQADataset('/home/aniket/coqa/data/coqa-train-v1.0.json',4,2)
+    print(len(dataset))

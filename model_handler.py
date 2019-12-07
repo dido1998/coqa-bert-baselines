@@ -95,7 +95,6 @@ class ModelHandler():
 		self._best_f1 = restored_params['best_f1']
 		self._best_em = restored_params['best_em']
 		self.data = restored_params['data']
-		self.data_converted = restored_params['data_converted']
 		self.prev_state = restored_params['prev_state']
 		self.restored = True
 
@@ -124,7 +123,6 @@ class ModelHandler():
 			'best_f1':self._best_f1,
 			'best_em':self._best_em,
 			'data':self.train_dataset.data,
-			'data_converted':self.train_dataset.data_converted,
 			'prev_state':self.train_dataset.prev_state}
 		torch.save(save_dic, self.config['save_state_dir']+'/latest/model.pth')
 
@@ -134,7 +132,7 @@ class ModelHandler():
 	    length = self._n_train_batches
 	    if not training:
 	    	length = self._n_dev_batches
-	    while data_loader.prev_state < length:
+	    while data_loader.prev_state < len(data_loader):
 	        input_batch = data_loader.next()
 	        res = self.model(input_batch, training)
 	        tr_loss = 0
