@@ -1,8 +1,8 @@
-from data_helper.coqa import CoQAReader
-from data_helper.BertWrapper import BertDataHelper
-from data_helper.bert_coqa import BertCoQA
-from data_helper.vocabulary import  Vocabulary
-from data_helper.batch_generator import BatchGenerator
+from .data_helper.coqa import CoQAReader
+from .data_helper.BertWrapper import BertDataHelper
+from .data_helper.bert_coqa import BertCoQA
+from .data_helper.vocabulary import  Vocabulary
+from .data_helper.batch_generator import BatchGenerator
 from random import shuffle
 import logging
 import sys
