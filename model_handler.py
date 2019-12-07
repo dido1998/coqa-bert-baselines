@@ -45,7 +45,7 @@ class ModelHandler():
 		if config['pretrained_dir'] is not None:
 			self.restore()
 
-		self.train_dataset, self.eval_dataset = prepare_datasets(config, self.data, self.data_converted)
+		self.train_dataset, self.eval_dataset = prepare_datasets(config, self.data)
 		self._n_dev_batches = len(self.train_dataset) // config['batch_size']
 		self._n_train_batches = len(self.eval_dataset) // config['batch_size']
 
@@ -131,8 +131,7 @@ class ModelHandler():
 	    length = self._n_train_batches
 	    if not training:
 	    	length = self._n_dev_batches
-	    print(data_loader.prev_state)
-	    print(len(data_loader))
+
 	    while data_loader.prev_state < len(data_loader):
 	        input_batch = data_loader.next()
 	        res = self.model(input_batch, training)
