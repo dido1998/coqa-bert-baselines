@@ -13,6 +13,7 @@ def str2bool(v):
 parser = argparse.ArgumentParser()
 parser.add_argument('--trainset', type = str, default = None, help = 'training dataset file')
 parser.add_argument('--devset', type = str, default = None, help = 'development dataset file')
+parser.add_argument('--vocab_folder', type = str, default = None, help = 'vocabulary folder')
 parser.add_argument('--model_name', type = str, default = 'BERT', help = '[BERT|RoBERTa|DistilBERT|SpanBERT]')
 parser.add_argument('--model_path', type = str, default = None, help = 'path to pretrained model')
 parser.add_argument('--pretrained_dir', type = str, default = None)

@@ -9,8 +9,8 @@ import sys
 
 
 def prepare_datasets(config, data = None, prev_state = 0):
-    train_dataset = CoQADataset(config['trainset'], config['batch_size'], config['n_history'], True, data, prev_state)
-    eval_dataset = CoQADataset(config['devset'], config['batch_size'], config['n_history'], False)
+    train_dataset = CoQADataset(config['trainset'], config['vocab_folder'], config['batch_size'], config['n_history'], True, data, prev_state)
+    eval_dataset = CoQADataset(config['devset'], config['vocab_folder'], config['batch_size'], config['n_history'], False)
     return train_dataset, eval_dataset
 
 
@@ -31,14 +31,14 @@ def read_json(filename, encoding='utf-8'):
 class CoQADataset():
     """CoQA dataset."""
 
-    def __init__(self, filename, batch_size, history_size, train = True, data = None, prev_state = 0):
+    def __init__(self, filename, vocab_folder, batch_size, history_size, train = True, data = None, prev_state = 0):
         #timer = Timer('Load %s' % filename)
         self.data = data
         self.vocab = None
         self.prev_state = prev_state
         self.batch_size = batch_size
         self.train = train
-        bert_dir = '/home/aniket/coqa/uncased_L-12_H-768_A-12'
+        bert_dir = vocab_folder
         self.bert_data_helper = BertDataHelper(bert_dir)
         if data == None:
             data_reader = CoQAReader(history_size)
