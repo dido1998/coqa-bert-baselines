@@ -18,6 +18,7 @@ class ModelHandler():
 	def __init__(self, config):
 		self.config = config
 		tokenizer_model = MODELS[config['model_name']]
+		tokenizer = tokenizer_model[1].from_pretrained(tokenizer_model[2])
 		if config['cuda']:
 			self.device = torch.device('cuda')
 		else:
