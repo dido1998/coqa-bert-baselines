@@ -31,7 +31,7 @@ class ModelHandler():
 		self._dev_em = AverageMeter()
 
 		self.model = Model(config, MODELS[config['model_name']], self.device, tokenizer).to(self.device)
-		t_total = len(self.train_loader) // config['gradient_accumulation_steps'] * config['max_epochs']
+		#t_total = len(self.train_loader) // config['gradient_accumulation_steps'] * config['max_epochs']
 		self.optimizer = AdamW(self.model.parameters(), lr=config['lr'], eps = config['adam_epsilon'] )
 		self.optimizer.zero_grad()
 		self._n_train_examples = 0
