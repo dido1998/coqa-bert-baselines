@@ -3,7 +3,7 @@ import tensorflow as tf
 from .ops import dropout, add_seq_mask
 from collections import defaultdict
 import tensorflow_hub as hub
-import modeling
+from .modeling import *
 import os
 
 VERY_NEGATIVE_NUMBER = -1e29

@@ -8,8 +8,8 @@ from .base_model import BaseModel
 from .trainer import Trainer
 # from sogou_mrc.libraries.BertWrapper import BertModelHelper
 from .layers import BertEmbedding
-import modeling
-import optimization
+from .modeling import *
+from .optimization import *
 
 VERY_NEGATIVE_NUMBER = -1e29
 
