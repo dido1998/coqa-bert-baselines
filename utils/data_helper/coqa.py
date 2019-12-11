@@ -338,15 +338,15 @@ domain_mappings = {"mctest": "children_stories", "gutenberg": "literature", "rac
 
 class CoQAEvaluator():
 
-    def __init__(self, gold_file, monitor="f1"):
-        self.gold_data, self.id_to_source = CoQAEvaluator.gold_answers_to_dict(gold_file)
+    def __init__(self, gold_file, train = False, monitor="f1"):
+        self.gold_data, self.id_to_source = CoQAEvaluator.gold_answers_to_dict(gold_file, train)
         self.monitor = monitor
 
     def get_monitor(self):
         return self.monitor
 
     @staticmethod
-    def gold_answers_to_dict(gold_file):
+    def gold_answers_to_dict(gold_file, train):
         dataset = json.load(open(gold_file))
         gold_dict = {}
         id_to_source = {}
@@ -356,7 +356,8 @@ class CoQAEvaluator():
             id_to_source[story_id] = source
             questions = story['questions']
             multiple_answers = [story['answers']]
-            multiple_answers += story['additional_answers'].values()
+            if not train:
+                multiple_answers += story['additional_answers'].values()
             for i, qa in enumerate(questions):
                 qid = qa['turn_id']
                 if i + 1 != qid:

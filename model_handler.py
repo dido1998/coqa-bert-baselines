@@ -24,7 +24,7 @@ class ModelHandler():
 			self.device = torch.device('cuda')
 		else:
 			self.device = torch.device('cpu')
-		self.train_evaluator = CoQAEvaluator(config['trainset'])
+		self.train_evaluator = CoQAEvaluator(config['trainset'], train = True)
 		self.dev_evaluator = CoQAEvaluator(config['devset'])
 		self._train_loss = AverageMeter()
 		self._train_f1 = AverageMeter()
