@@ -13,11 +13,11 @@ def tile(a, dim, n_tile):
     order_index = torch.LongTensor(np.concatenate([init_dim * np.arange(n_tile) + i for i in range(init_dim)]))
     return torch.index_select(a, dim, order_index)
 
-def one_hot(a, num_classes):
+def one_hot(a, num_classes, device):
 	b = torch.zeros(a.size(0), num_classes)
 	for i in range(a.size(0)):
 		b[i, a[i]] = 1
-	return b
+	return b.to(device)
 
 VERY_NEGATIVE_NUMBER = -1e29
 
@@ -72,8 +72,8 @@ class Model(nn.Module):
 			masked_end_logits = end_logits * input_mask + (1 - input_mask) * VERY_NEGATIVE_NUMBER
 			start_logits_  = torch.cat([masked_start_logits, yes_logit, no_logit, unk_logit], dim = 1)
 			end_logits_ = torch.cat([masked_end_logits, yes_logit, no_logit, unk_logit], dim = 1)
-			start_mask = one_hot(start_positions, start_logits.size(1))
-			end_mask = one_hot(end_positions, end_logits.size(1))
+			start_mask = one_hot(start_positions, start_logits.size(1), self.device)
+			end_mask = one_hot(end_positions, end_logits.size(1), self.device)
 			start_mask = start_mask * extractive_mask
 			end_mask = end_mask * extractive_mask
 			start_mask_ = torch.cat([start_mask, yes_mask, no_mask, unk_mask], dim = 1)
