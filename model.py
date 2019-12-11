@@ -72,12 +72,12 @@ class Model(nn.Module):
 			'no_logits':no_logit.cpu().data.numpy()
 			})
 		if train:
-			print(start_logits.size())
-			print(input_mask.size())
+			#print(start_logits.size())
+			#print(input_mask.size())
 			masked_start_logits = start_logits * input_mask + (1 - input_mask) * VERY_NEGATIVE_NUMBER
 			masked_end_logits = end_logits * input_mask + (1 - input_mask) * VERY_NEGATIVE_NUMBER
 			start_logits_  = torch.cat([masked_start_logits, yes_logit, no_logit, unk_logit], dim = 1)
-			end_logits_ = torch.cat([masked_end_logits, yes_logit, no_logit, unk_logit], dim = 2)
+			end_logits_ = torch.cat([masked_end_logits, yes_logit, no_logit, unk_logit], dim = 1)
 			start_mask = one_hot(start_positions, start_logits.size(1))
 			end_mask = one_hot(end_positions, end_logits.size(1))
 			start_mask = start_mask * extractive_mask
