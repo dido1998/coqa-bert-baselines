@@ -45,9 +45,9 @@ class Model(nn.Module):
 		segment_ids = torch.tensor(inp['segment_ids'], dtype = torch.long).to(self.device)
 		start_positions = torch.tensor(inp['start_position'], dtype = torch.long).to(self.device)
 		end_positions = torch.tensor(inp['end_position'], dtype = torch.long).to(self.device)
-		yes = torch.tensor(inp['yes_mask'], dtype = torch.float32).to(self.device).view(-1, 1)
-		no = torch.tensor(inp['no_mask'], dtype = torch.float32).to(self.device).view(-1, 1)
-		unk = torch.tensor(inp['unk_mask'], dtype = torch.float32).to(self.device).view(-1, 1)
+		yes_mask = torch.tensor(inp['yes_mask'], dtype = torch.float32).to(self.device).view(-1, 1)
+		no_mask = torch.tensor(inp['no_mask'], dtype = torch.float32).to(self.device).view(-1, 1)
+		unk_mask = torch.tensor(inp['unk_mask'], dtype = torch.float32).to(self.device).view(-1, 1)
 		extractive_mask = torch.tensor(inp['extractive_mask'], dtype = torch.float32).to(self.device).view(-1,1)
 
 		if self.config['model_name'] == 'BERT' or self.config['model_name']=='SpanBERT':
