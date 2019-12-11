@@ -59,8 +59,8 @@ class CoQADataset():
         
     def next(self):
         data_converted = self.bert_data_helper.convert(self.data[self.prev_state:self.prev_state + self.batch_size])
-        batch = BatchGenerator(self.vocab, data_converted, training = self.train, batch_size = self.batch_size, additional_fields=['input_ids','segment_ids','input_mask','start_position','end_position',
-            , 'question_mask','rationale_mask','yes_mask','extractive_mask','no_mask','unk_mask','qid'],
+        batch = BatchGenerator(self.vocab, data_converted, training = self.train, batch_size = self.batch_size, additional_fields=['input_ids','segment_ids','input_mask','start_position','end_position', 
+            'question_mask','rationale_mask','yes_mask','extractive_mask','no_mask','unk_mask','qid'],
         shuffle_=False)
         self.prev_state+=self.batch_size
         batch.init()
