@@ -212,8 +212,8 @@ class Model(nn.Module):
  
 
 	def evaluate(self, evaluator, output, instances):
-		result = self.get_best_answer(output, instances)
-		print(result)
+	    result = self.get_best_answer(output, instances)
+	    print(result)
 	    score = evaluator.get_score(result)
 	    return score['f1'], score['em']
 
