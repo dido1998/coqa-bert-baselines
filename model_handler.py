@@ -149,7 +149,7 @@ class ModelHandler():
 	       
 	        f1, em = self.model.evaluate(self.evaluator, res['output'], instances)
 
-	        self._update_metrics(tr_loss, f1, em, len(paragraphs), training=training)
+	        self._update_metrics(tr_loss, f1, em, len(instances), training=training)
 
 	        if training:
 	            self._n_train_examples += len(paragraphs)
