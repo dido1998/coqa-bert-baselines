@@ -64,13 +64,7 @@ class Model(nn.Module):
 		no_logit = self.no_output(pooled_output).view(-1, 1)
 		unk_logit = self.unk_output(pooled_output).view(-1, 1)
 		results = {}
-		results['output'] = OrderedDict({
-			'start_logits': start_logits.cpu().data.numpy(),
-			'end_logits': end_logits.cpu().data.numpy(),
-			'unk_logits': unk_logit.cpu().data.numpy(),
-			'yes_logits': yes_logit.cpu().data.numpy(),
-			'no_logits':no_logit.cpu().data.numpy()
-			})
+		
 		if train:
 			#print(start_logits.size())
 			#print(input_mask.size())
@@ -91,7 +85,13 @@ class Model(nn.Module):
 			end_loss = loss_fct(end_logits_, end_targets)
 			total_loss = (start_loss + end_loss) / 2
 			results['loss'] = total_loss
-
+		results['output'] = OrderedDict({
+			'start_logits': start_logits.cpu().data.numpy(),
+			'end_logits': end_logits.cpu().data.numpy(),
+			'unk_logits': unk_logit.cpu().data.numpy(),
+			'yes_logits': yes_logit.cpu().data.numpy(),
+			'no_logits':no_logit.cpu().data.numpy()
+			})
 			
 		return results
 
