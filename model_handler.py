@@ -152,7 +152,7 @@ class ModelHandler():
 	        self._update_metrics(tr_loss, f1, em, len(instances), training=training)
 
 	        if training:
-	            self._n_train_examples += len(paragraphs)
+	            self._n_train_examples += len(instances)
 	        if (verbose > 0) and (data_loader.batch_state % verbose == 0):
 	            if save:
 	            	self.save(self._epoch - 1)
