@@ -24,7 +24,8 @@ class ModelHandler():
 			self.device = torch.device('cuda')
 		else:
 			self.device = torch.device('cpu')
-		self.evaluator = CoQAEvaluator(config['devset'])
+		self.train_evaluator = CoQAEvaluator(config['trainset'])
+		self.dev_evaluator = CoQAEvaluator(config['devset'])
 		self._train_loss = AverageMeter()
 		self._train_f1 = AverageMeter()
 		self._train_em = AverageMeter()
@@ -146,9 +147,10 @@ class ModelHandler():
 	       
 	        if training:
 	        	self.model.update(loss, self.optimizer, data_loader.prev_state // self.batch_size)
-	       
-	        f1, em = self.model.evaluate(self.evaluator, res['output'], instances)
-
+	        if training:
+	        	f1, em = self.model.evaluate(self.train_evaluator, res['output'], instances)
+	        else:
+	        	f1, em = self.model.evaluate(self.dev_evaluator, res['output'], instances)
 	        self._update_metrics(tr_loss, f1, em, len(instances), training=training)
 
 	        if training:
