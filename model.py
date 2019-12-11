@@ -58,8 +58,8 @@ class Model(nn.Module):
 		pooled_output = outputs[1]
 		logits = self.qa_outputs(sequence_output)
 		start_logits, end_logits = logits.split(1, dim=-1)
-		#start_logits = start_logits.squeeze(-1)
-		#end_logits = end_logits.squeeze(-1)
+		start_logits = start_logits.squeeze(-1)
+		end_logits = end_logits.squeeze(-1)
 		yes_logit = self.yes_output(pooled_output).view(-1, 1)
 		no_logit = self.no_output(pooled_output).view(-1, 1)
 		unk_logit = self.unk_output(pooled_output).view(-1, 1)
@@ -72,6 +72,8 @@ class Model(nn.Module):
 			'no_logits':no_logit.cpu().data.numpy()
 			})
 		if train:
+			print(start_logits.size())
+			print(input_mask.size())
 			masked_start_logits = start_logits * input_mask + (1 - input_mask) * VERY_NEGATIVE_NUMBER
 			masked_end_logits = end_logits * input_mask + (1 - input_mask) * VERY_NEGATIVE_NUMBER
 			start_logits_  = torch.cat([masked_start_logits, yes_logit, no_logit, unk_logit], dim = 1)
