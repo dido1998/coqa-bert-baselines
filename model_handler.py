@@ -153,7 +153,7 @@ class ModelHandler():
 
 	        if training:
 	            self._n_train_examples += len(instances)
-	        if (verbose > 0) and (data_loader.batch_state % verbose == 0):
+	        if (verbose > 0) and ((data_loader.prev_state // self.batch_size) % verbose == 0):
 	            if save:
 	            	self.save(self._epoch - 1)
 	            mode = "train" if training else "dev"
