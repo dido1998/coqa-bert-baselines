@@ -210,7 +210,7 @@ class Model(nn.Module):
  
 
 	def evaluate(self, evaluator, output, instances):
-	    score = evaluator.get_scores(self.get_best_answer(output, instances))
+	    score = evaluator.get_score(self.get_best_answer(output, instances))
 	    return score['f1'], score['em']
 
 	def _scores_to_text(self, text, score_s, score_e):
