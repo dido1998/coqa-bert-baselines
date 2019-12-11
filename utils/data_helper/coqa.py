@@ -454,6 +454,7 @@ class CoQAEvaluator():
         f1_scores = {}
         for story_id, turn_id in self.gold_data:
             key = (story_id, turn_id)
+            print('hello')
             if key not in pred_data:
                 # sys.stderr.write('Missing prediction for {} and turn_id: {}\n'.format(story_id, turn_id))
                 continue
