@@ -116,95 +116,95 @@ class Model(nn.Module):
 	    return ""
 
 
-def get_best_answer(self, output, instances, max_answer_len=11, null_score_diff_threshold=0.0):
-    def _get_best_indexes(logits, n_best_size):
-        """Get the n-best logits from a list."""
-        index_and_score = sorted(enumerate(logits), key=lambda x: x[1], reverse=True)
+	def get_best_answer(self, output, instances, max_answer_len=11, null_score_diff_threshold=0.0):
+	    def _get_best_indexes(logits, n_best_size):
+	        """Get the n-best logits from a list."""
+	        index_and_score = sorted(enumerate(logits), key=lambda x: x[1], reverse=True)
 
-        best_indexes = []
-        for i in range(len(index_and_score)):
-            if i >= n_best_size:
-                break
-            best_indexes.append(index_and_score[i][0])
-        return best_indexes
+	        best_indexes = []
+	        for i in range(len(index_and_score)):
+	            if i >= n_best_size:
+	                break
+	            best_indexes.append(index_and_score[i][0])
+	        return best_indexes
 
-    ground_answers = []
-    qid_with_max_logits = {}
-    qid_with_final_text = {}
-    qid_with_no_logits = {}
-    qid_with_yes_logits = {}
-    qid_with_unk_logits = {}
-    for i in range(len(instances)):
-        instance = instances[i]
-        ground_answers.append(instance['answer'])
-        start_logits = output['start_logits'][i]
-        end_logits = output['end_logits'][i]
-        feature_unk_score = output['unk_logits'][i][0] * 2
-        feature_yes_score = output['yes_logits'][i][0] * 2
-        feature_no_score = output['no_logits'][i][0] * 2
-        start_indexes = _get_best_indexes(start_logits, n_best_size=20)
-        end_indexes = _get_best_indexes(end_logits, n_best_size=20)
-        max_start_index = -1
-        max_end_index = -1
-        max_logits = -100000000
-        for start_index in start_indexes:
-            for end_index in end_indexes:
-                if start_index >= len(instance['tokens']):
-                    continue
-                if end_index >= len(instance['tokens']):
-                    continue
-                if start_index not in instance['token_to_orig_map']:
-                    continue
-                if end_index not in instance['token_to_orig_map']:
-                    continue
-                if end_index < start_index:
-                    continue
-                if not instance['token_is_max_context'].get(start_index, False):
-                    continue
-                length = end_index - start_index - 1
-                if length > max_answer_len:
-                    continue
-                sum_logits = start_logits[start_index] + end_logits[end_index]
-                if sum_logits > max_logits:
-                    max_logits = sum_logits
-                    max_start_index = start_index
-                    max_end_index = end_index
-        final_text = ''
-        if (max_start_index != -1 and max_end_index != -1):
-            final_text = self.prediction_to_ori(max_start_index, max_end_index, instance)
-        story_id, turn_id = instance["qid"].split("|")
-        turn_id = int(turn_id)
-        if (story_id, turn_id) in qid_with_max_logits and max_logits > qid_with_max_logits[(story_id, turn_id)]:
-            qid_with_max_logits[(story_id, turn_id)] = max_logits
-            qid_with_final_text[(story_id, turn_id)] = final_text
-        if (story_id, turn_id) not in qid_with_max_logits:
-            qid_with_max_logits[(story_id, turn_id)] = max_logits
-            qid_with_final_text[(story_id, turn_id)] = final_text
-        if (story_id, turn_id) not in qid_with_no_logits:
-            qid_with_no_logits[(story_id, turn_id)] = feature_no_score
-        if feature_no_score > qid_with_no_logits[(story_id, turn_id)]:
-            qid_with_no_logits[(story_id, turn_id)] = feature_no_score
-        if (story_id, turn_id) not in qid_with_yes_logits:
-            qid_with_yes_logits[(story_id, turn_id)] = feature_yes_score
-        if feature_yes_score > qid_with_yes_logits[(story_id, turn_id)]:
-            qid_with_yes_logits[(story_id, turn_id)] = feature_yes_score
-        if (story_id, turn_id) not in qid_with_unk_logits:
-            qid_with_unk_logits[(story_id, turn_id)] = feature_unk_score
-        if feature_unk_score > qid_with_unk_logits[(story_id, turn_id)]:
-            qid_with_unk_logits[(story_id, turn_id)] = feature_unk_score
-    result = {}
-    for k in qid_with_max_logits:
-        scores = [qid_with_max_logits[k], qid_with_no_logits[k], qid_with_yes_logits[k], qid_with_unk_logits[k]]
-        max_val = max(scores)
-        if max_val == qid_with_max_logits[k]:
-            result[k] = qid_with_final_text[k]
-        elif max_val == qid_with_unk_logits[k]:
-            result[k] = 'unknown'
-        elif max_val == qid_with_yes_logits[k]:
-            result[k] = 'yes'
-        else:
-            result[k] = 'no'
-    return result
+	    ground_answers = []
+	    qid_with_max_logits = {}
+	    qid_with_final_text = {}
+	    qid_with_no_logits = {}
+	    qid_with_yes_logits = {}
+	    qid_with_unk_logits = {}
+	    for i in range(len(instances)):
+	        instance = instances[i]
+	        ground_answers.append(instance['answer'])
+	        start_logits = output['start_logits'][i]
+	        end_logits = output['end_logits'][i]
+	        feature_unk_score = output['unk_logits'][i][0] * 2
+	        feature_yes_score = output['yes_logits'][i][0] * 2
+	        feature_no_score = output['no_logits'][i][0] * 2
+	        start_indexes = _get_best_indexes(start_logits, n_best_size=20)
+	        end_indexes = _get_best_indexes(end_logits, n_best_size=20)
+	        max_start_index = -1
+	        max_end_index = -1
+	        max_logits = -100000000
+	        for start_index in start_indexes:
+	            for end_index in end_indexes:
+	                if start_index >= len(instance['tokens']):
+	                    continue
+	                if end_index >= len(instance['tokens']):
+	                    continue
+	                if start_index not in instance['token_to_orig_map']:
+	                    continue
+	                if end_index not in instance['token_to_orig_map']:
+	                    continue
+	                if end_index < start_index:
+	                    continue
+	                if not instance['token_is_max_context'].get(start_index, False):
+	                    continue
+	                length = end_index - start_index - 1
+	                if length > max_answer_len:
+	                    continue
+	                sum_logits = start_logits[start_index] + end_logits[end_index]
+	                if sum_logits > max_logits:
+	                    max_logits = sum_logits
+	                    max_start_index = start_index
+	                    max_end_index = end_index
+	        final_text = ''
+	        if (max_start_index != -1 and max_end_index != -1):
+	            final_text = self.prediction_to_ori(max_start_index, max_end_index, instance)
+	        story_id, turn_id = instance["qid"].split("|")
+	        turn_id = int(turn_id)
+	        if (story_id, turn_id) in qid_with_max_logits and max_logits > qid_with_max_logits[(story_id, turn_id)]:
+	            qid_with_max_logits[(story_id, turn_id)] = max_logits
+	            qid_with_final_text[(story_id, turn_id)] = final_text
+	        if (story_id, turn_id) not in qid_with_max_logits:
+	            qid_with_max_logits[(story_id, turn_id)] = max_logits
+	            qid_with_final_text[(story_id, turn_id)] = final_text
+	        if (story_id, turn_id) not in qid_with_no_logits:
+	            qid_with_no_logits[(story_id, turn_id)] = feature_no_score
+	        if feature_no_score > qid_with_no_logits[(story_id, turn_id)]:
+	            qid_with_no_logits[(story_id, turn_id)] = feature_no_score
+	        if (story_id, turn_id) not in qid_with_yes_logits:
+	            qid_with_yes_logits[(story_id, turn_id)] = feature_yes_score
+	        if feature_yes_score > qid_with_yes_logits[(story_id, turn_id)]:
+	            qid_with_yes_logits[(story_id, turn_id)] = feature_yes_score
+	        if (story_id, turn_id) not in qid_with_unk_logits:
+	            qid_with_unk_logits[(story_id, turn_id)] = feature_unk_score
+	        if feature_unk_score > qid_with_unk_logits[(story_id, turn_id)]:
+	            qid_with_unk_logits[(story_id, turn_id)] = feature_unk_score
+	    result = {}
+	    for k in qid_with_max_logits:
+	        scores = [qid_with_max_logits[k], qid_with_no_logits[k], qid_with_yes_logits[k], qid_with_unk_logits[k]]
+	        max_val = max(scores)
+	        if max_val == qid_with_max_logits[k]:
+	            result[k] = qid_with_final_text[k]
+	        elif max_val == qid_with_unk_logits[k]:
+	            result[k] = 'unknown'
+	        elif max_val == qid_with_yes_logits[k]:
+	            result[k] = 'yes'
+	        else:
+	            result[k] = 'no'
+	    return result
  
 
 	def evaluate(self, evaluator, output, instances):
