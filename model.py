@@ -65,11 +65,11 @@ class Model(nn.Module):
 		unk_logit = self.unk_output(pooled_output).view(-1, 1)
 		results = {}
 		results['output'] = OrderedDict({
-			'start_logits': start_logits.cpu().data().numpy(),
-			'end_logits': end_logits.cpu().data().numpy(),
-			'unk_logits': unk_logit.cpu().data().numpy(),
-			'yes_logits': yes_logit.cpu().data().numpy(),
-			'no_logits':no_logit.cpu().data().numpy()
+			'start_logits': start_logits.cpu().data.numpy(),
+			'end_logits': end_logits.cpu().data.numpy(),
+			'unk_logits': unk_logit.cpu().data.numpy(),
+			'yes_logits': yes_logit.cpu().data.numpy(),
+			'no_logits':no_logit.cpu().data.numpy()
 			})
 		if train:
 			masked_start_logits = start_logits * input_mask + (1 - input_mask) * VERY_NEGATIVE_NUMBER
