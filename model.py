@@ -3,8 +3,23 @@ import torch.nn as nn
 from utils.eval_utils import compute_eval_metric
 from transformers import *
 import numpy as np
+from Collections import OrderedDict
 
+def tile(a, dim, n_tile):
+    init_dim = a.size(dim)
+    repeat_idx = [1] * a.dim()
+    repeat_idx[dim] = n_tile
+    a = a.repeat(*(repeat_idx))
+    order_index = torch.LongTensor(np.concatenate([init_dim * np.arange(n_tile) + i for i in range(init_dim)]))
+    return torch.index_select(a, dim, order_index)
 
+def one_hot(a, num_classes):
+	b = torch.zeros(a.size(0), num_classes)
+	for i in range(a.size(0)):
+		b[i, a[i]] = 1
+	return b
+
+VERY_NEGATIVE_NUMBER = -1e29
 
 class Model(nn.Module):
 	def __init__(self, config, model, device, tokenizer):
@@ -19,6 +34,10 @@ class Model(nn.Module):
 		self.pretrained_model.resize_token_embeddings(len(tokenizer))
 		self.pretrained_model.train()
 		self.qa_outputs = nn.Linear(768, 2)
+		self.yes_output = nn.Linear(768, 1)
+		self.no_output = nn.Linear(768, 1)
+		self.unk_output = nn.Linear(768, 1)
+
 		
 	def forward(self, inp, train = True):
 		input_ids = torch.tensor(inp['input_ids'], dtype = torch.long).to(self.device)
@@ -26,29 +45,52 @@ class Model(nn.Module):
 		segment_ids = torch.tensor(inp['segment_ids'], dtype = torch.long).to(self.device)
 		start_positions = torch.tensor(inp['start_position'], dtype = torch.long).to(self.device)
 		end_positions = torch.tensor(inp['end_position'], dtype = torch.long).to(self.device)
+		yes = torch.tensor(inp['yes_mask'], dtype = torch.float32).to(self.device).view(-1, 1)
+		no = torch.tensor(inp['no_mask'], dtype = torch.float32).to(self.device).view(-1, 1)
+		unk = torch.tensor(inp['unk_mask'], dtype = torch.float32).to(self.device).view(-1, 1)
+		extractive_mask = torch.tensor(inp['extractive_mask'], dtype = torch.float32).to(self.device).view(-1,1)
 
 		if self.config['model_name'] == 'BERT' or self.config['model_name']=='SpanBERT':
 			outputs = self.pretrained_model(input_ids, attention_mask = input_mask, token_type_ids = segment_ids)
 		else:
 			outputs = self.pretrained_model(input_ids, attention_mask = input_mask) # DistilBERT and RoBERTa do not use segment_ids 
 		sequence_output = outputs[0]
+		pooled_output = outputs[1]
 		logits = self.qa_outputs(sequence_output)
 		start_logits, end_logits = logits.split(1, dim=-1)
-		start_logits = start_logits.squeeze(-1)
-		end_logits = end_logits.squeeze(-1)
+		#start_logits = start_logits.squeeze(-1)
+		#end_logits = end_logits.squeeze(-1)
+		yes_logit = self.yes_output(pooled_output).view(-1, 1)
+		no_logit = self.no_output(pooled_output).view(-1, 1)
+		unk_logit = self.unk_output(pooled_output).view(-1, 1)
 		results = {}
-		results['start_logits'] = start_logits
-		results['end_logits'] = end_logits
+		results['output'] = OrderedDict({
+			'start_logits': start_logits,
+			'end_logits': end_logits,
+			'unk_logits': unk_logit,
+			'yes_logits': yes_logit,
+			'no_logits':no_logit
+			})
 		if train:
-			if len(start_positions.size()) > 1:
-				start_positions = start_positions.squeeze(-1)
-			if len(end_positions.size()) > 1:
-				end_positions = end_positions.squeeze(-1)
+			masked_start_logits = start_logits * input_mask + (1 - input_mask) * VERY_NEGATIVE_NUMBER
+			masked_end_logits = end_logits * input_mask + (1 - input_mask) * VERY_NEGATIVE_NUMBER
+			start_logits_  = torch.cat([masked_start_logits, yes_logit, no_logit, unk_logit], dim = 1)
+			end_logits_ = torch.cat([masked_end_logits, yes_logit, no_logit, unk_logit], dim = 2)
+			start_mask = one_hot(start_positions, start_logits.size(1))
+			end_mask = one_hot(end_positions, end_logits.size(1))
+			start_mask = start_mask * extractive_mask
+			end_mask = end_mask * extractive_mask
+			start_mask_ = torch.cat([start_mask, yes_mask, no_mask, unk_mask], dim = 1)
+			end_mask_ = torch.cat([end_mask, yes_mask, no_mask, unk_mask], dim = 1)
+			_, start_targets = start_mask.max(dim= 1)
+			_, end_targets = end_mask.max(dim = 1)
 			loss_fct = nn.CrossEntropyLoss()
-			start_loss = loss_fct(start_logits, start_positions)
-			end_loss = loss_fct(end_logits, end_positions)
+			start_loss = loss_fct(start_logits_, start_targets)
+			end_loss = loss_fct(end_logits_, end_targets)
 			total_loss = (start_loss + end_loss) / 2
 			results['loss'] = total_loss
+
+			
 		return results
 
 	def update(self, loss, optimizer, step):
@@ -62,24 +104,112 @@ class Model(nn.Module):
 			optimizer.step()
 			optimizer.zero_grad()
 
-	def evaluate(self, score_s, score_e, paragraphs, answers, debug = False):
-	    if score_s.size(0) > 1:
-	        score_s = score_s.exp().squeeze()
-	        score_e = score_e.exp().squeeze()
-	    else:
-	        score_s = score_s.exp()
-	        score_e = score_e.exp()
-	    predictions = []
-	    spans = []
-	    for i, (_s, _e) in enumerate(zip(score_s, score_e)):
-	        _s = _s.view(1, -1)
-	        _e = _e.view(1, -1)
-	        prediction, span = self._scores_to_text(paragraphs[i], _s, _e)
-	        predictions.append(prediction)
-	        spans.append(span)
-	    answers = [[' '.join(a)] for a in answers]
-	    f1, em = self.evaluate_predictions(predictions, answers)
-	    return f1, em
+	def prediction_to_ori(self, start_index, end_index, instance):
+	    if start_index > 0:
+	        tok_tokens = instance['tokens'][start_index:end_index + 1]
+	        orig_doc_start = instance['token_to_orig_map'][start_index]
+	        orig_doc_end = instance['token_to_orig_map'][end_index]
+	        char_start_position = instance["context_token_spans"][orig_doc_start][0]
+	        char_end_position = instance["context_token_spans"][orig_doc_end][1]
+	        pred_answer = instance["context"][char_start_position:char_end_position]
+	        return pred_answer
+	    return ""
+
+
+def get_best_answer(self, output, instances, max_answer_len=11, null_score_diff_threshold=0.0):
+    def _get_best_indexes(logits, n_best_size):
+        """Get the n-best logits from a list."""
+        index_and_score = sorted(enumerate(logits), key=lambda x: x[1], reverse=True)
+
+        best_indexes = []
+        for i in range(len(index_and_score)):
+            if i >= n_best_size:
+                break
+            best_indexes.append(index_and_score[i][0])
+        return best_indexes
+
+    ground_answers = []
+    qid_with_max_logits = {}
+    qid_with_final_text = {}
+    qid_with_no_logits = {}
+    qid_with_yes_logits = {}
+    qid_with_unk_logits = {}
+    for i in range(len(instances)):
+        instance = instances[i]
+        ground_answers.append(instance['answer'])
+        start_logits = output['start_logits'][i]
+        end_logits = output['end_logits'][i]
+        feature_unk_score = output['unk_logits'][i][0] * 2
+        feature_yes_score = output['yes_logits'][i][0] * 2
+        feature_no_score = output['no_logits'][i][0] * 2
+        start_indexes = _get_best_indexes(start_logits, n_best_size=20)
+        end_indexes = _get_best_indexes(end_logits, n_best_size=20)
+        max_start_index = -1
+        max_end_index = -1
+        max_logits = -100000000
+        for start_index in start_indexes:
+            for end_index in end_indexes:
+                if start_index >= len(instance['tokens']):
+                    continue
+                if end_index >= len(instance['tokens']):
+                    continue
+                if start_index not in instance['token_to_orig_map']:
+                    continue
+                if end_index not in instance['token_to_orig_map']:
+                    continue
+                if end_index < start_index:
+                    continue
+                if not instance['token_is_max_context'].get(start_index, False):
+                    continue
+                length = end_index - start_index - 1
+                if length > max_answer_len:
+                    continue
+                sum_logits = start_logits[start_index] + end_logits[end_index]
+                if sum_logits > max_logits:
+                    max_logits = sum_logits
+                    max_start_index = start_index
+                    max_end_index = end_index
+        final_text = ''
+        if (max_start_index != -1 and max_end_index != -1):
+            final_text = self.prediction_to_ori(max_start_index, max_end_index, instance)
+        story_id, turn_id = instance["qid"].split("|")
+        turn_id = int(turn_id)
+        if (story_id, turn_id) in qid_with_max_logits and max_logits > qid_with_max_logits[(story_id, turn_id)]:
+            qid_with_max_logits[(story_id, turn_id)] = max_logits
+            qid_with_final_text[(story_id, turn_id)] = final_text
+        if (story_id, turn_id) not in qid_with_max_logits:
+            qid_with_max_logits[(story_id, turn_id)] = max_logits
+            qid_with_final_text[(story_id, turn_id)] = final_text
+        if (story_id, turn_id) not in qid_with_no_logits:
+            qid_with_no_logits[(story_id, turn_id)] = feature_no_score
+        if feature_no_score > qid_with_no_logits[(story_id, turn_id)]:
+            qid_with_no_logits[(story_id, turn_id)] = feature_no_score
+        if (story_id, turn_id) not in qid_with_yes_logits:
+            qid_with_yes_logits[(story_id, turn_id)] = feature_yes_score
+        if feature_yes_score > qid_with_yes_logits[(story_id, turn_id)]:
+            qid_with_yes_logits[(story_id, turn_id)] = feature_yes_score
+        if (story_id, turn_id) not in qid_with_unk_logits:
+            qid_with_unk_logits[(story_id, turn_id)] = feature_unk_score
+        if feature_unk_score > qid_with_unk_logits[(story_id, turn_id)]:
+            qid_with_unk_logits[(story_id, turn_id)] = feature_unk_score
+    result = {}
+    for k in qid_with_max_logits:
+        scores = [qid_with_max_logits[k], qid_with_no_logits[k], qid_with_yes_logits[k], qid_with_unk_logits[k]]
+        max_val = max(scores)
+        if max_val == qid_with_max_logits[k]:
+            result[k] = qid_with_final_text[k]
+        elif max_val == qid_with_unk_logits[k]:
+            result[k] = 'unknown'
+        elif max_val == qid_with_yes_logits[k]:
+            result[k] = 'yes'
+        else:
+            result[k] = 'no'
+    return result
+ 
+
+	def evaluate(self, evaluator, output, instances):
+	    score = evaluator.get_scores(self.get_best_answer(output, instances))
+	    return score['f1'], score['em']
 
 	def _scores_to_text(self, text, score_s, score_e):
 	    max_len = score_s.size(1)

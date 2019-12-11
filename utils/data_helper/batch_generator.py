@@ -4,13 +4,13 @@ import numpy as np
 import collections
 import six
 import logging
-
+from random import shuffle
 import multiprocessing
 class BatchGenerator(object):
     def __init__(self, vocab, instances, batch_size=32, use_char=True, training=False,
-                 additional_fields=None, feature_vocab=None,num_parallel_calls=0,shuffle = True):
+                 additional_fields=None, feature_vocab=None,num_parallel_calls=0,shuffle_ = True):
         self.instances = instances
-        if shuffle:
+        if shuffle_:
             shuffle(self.instances)
         self.vocab = vocab
         self.batch_size = batch_size

@@ -6,6 +6,7 @@ from model import Model
 from transformers import *
 import time
 import os
+from utils.data_helper.coqa import CoQAEvaluator
 
 MODELS = {'BERT':(BertModel,       BertTokenizer,       'bert-base-uncased'),
           'DistilBERT':(DistilBertModel, DistilBertTokenizer, 'distilbert-base-uncased'),
@@ -23,7 +24,7 @@ class ModelHandler():
 			self.device = torch.device('cuda')
 		else:
 			self.device = torch.device('cpu')
-
+		self.evaluator = CoQAEvaluator(config['devset'])
 		self._train_loss = AverageMeter()
 		self._train_f1 = AverageMeter()
 		self._train_em = AverageMeter()
@@ -142,14 +143,11 @@ class ModelHandler():
 	        	if self.config['gradient_accumulation_steps'] > 1:
 	        		loss = loss / self.config['gradient_accumulation_steps']
 	        	tr_loss = loss.mean().item()
-	        start_logits = res['start_logits']
-	        end_logits = res['end_logits']
-	        
+	       
 	        if training:
 	        	self.model.update(loss, self.optimizer, data_loader.prev_state // self.batch_size)
-	        paragraphs = [inp['tokens'] for inp in input_batch]
-	        answers = [inp['answer'] for inp in input_batch]
-	        f1, em = self.model.evaluate(start_logits, end_logits, paragraphs, answers)
+	       
+	        f1, em = self.model.evaluate(self.evaluator, res['output'], data_loader.get_instances())
 
 	        self._update_metrics(tr_loss, f1, em, len(paragraphs), training=training)
 
