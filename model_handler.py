@@ -135,7 +135,7 @@ class ModelHandler():
 	    	length = self._n_dev_batches
 
 	    while data_loader.prev_state < len(data_loader):
-	        input_batch = data_loader.next()
+	        input_batch, instances = data_loader.next()
 	        res = self.model(input_batch, training)
 	        tr_loss = 0
 	        if training:
@@ -147,7 +147,7 @@ class ModelHandler():
 	        if training:
 	        	self.model.update(loss, self.optimizer, data_loader.prev_state // self.batch_size)
 	       
-	        f1, em = self.model.evaluate(self.evaluator, res['output'], data_loader.get_instances())
+	        f1, em = self.model.evaluate(self.evaluator, res['output'], instances)
 
 	        self._update_metrics(tr_loss, f1, em, len(paragraphs), training=training)
 
