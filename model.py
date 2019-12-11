@@ -3,7 +3,7 @@ import torch.nn as nn
 from utils.eval_utils import compute_eval_metric
 from transformers import *
 import numpy as np
-from Collections import OrderedDict
+from collections import OrderedDict
 
 def tile(a, dim, n_tile):
     init_dim = a.size(dim)
