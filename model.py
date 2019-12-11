@@ -136,8 +136,8 @@ class Model(nn.Module):
 	    qid_with_no_logits = {}
 	    qid_with_yes_logits = {}
 	    qid_with_unk_logits = {}
-	    print(len(instances))
-	    print(output['start_logits'].shape)
+	    #print(len(instances))
+	    #print(output['start_logits'].shape)
 	    for i in range(len(instances)):
 	        instance = instances[i]
 	        ground_answers.append(instance['answer'])

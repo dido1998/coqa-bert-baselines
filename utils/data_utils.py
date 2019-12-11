@@ -64,6 +64,8 @@ class CoQADataset():
         shuffle_=False)
         self.prev_state+=self.batch_size
         batch.init()
+        print(batch.get_instance_size())
+        print(batch.get_batch_size())
         return batch.next(), batch.get_instances()
 
     
