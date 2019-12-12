@@ -450,6 +450,7 @@ class CoQAEvaluator():
         print(a_gold_list)
         print(a_pred)
         print(story_id)
+        print(turn_id)
         print('-----------------------')
         return CoQAEvaluator._compute_turn_score(a_gold_list, a_pred)
 
