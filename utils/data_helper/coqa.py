@@ -449,6 +449,7 @@ class CoQAEvaluator():
         a_gold_list = self.gold_data[key]
         print(a_gold_list)
         print(a_pred)
+        print(story_id)
         print('-----------------------')
         return CoQAEvaluator._compute_turn_score(a_gold_list, a_pred)
 
