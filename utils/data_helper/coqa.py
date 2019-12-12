@@ -447,6 +447,9 @@ class CoQAEvaluator():
         ''' This is the function what you are probably looking for. a_pred is the answer string your model predicted. '''
         key = (story_id, turn_id)
         a_gold_list = self.gold_data[key]
+        print(a_gold_list)
+        print(a_pred)
+        print('-----------------------')
         return CoQAEvaluator._compute_turn_score(a_gold_list, a_pred)
 
     def get_raw_scores(self, pred_data):
@@ -461,7 +464,6 @@ class CoQAEvaluator():
             if key not in pred_data:
                 # sys.stderr.write('Missing prediction for {} and turn_id: {}\n'.format(story_id, turn_id))
                 continue
-            print('lol')
             a_pred = pred_data[key]
             scores = self.compute_turn_score(story_id, turn_id, a_pred)
             # Take max over all gold answers
