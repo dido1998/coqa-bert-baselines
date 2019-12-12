@@ -62,7 +62,7 @@ class CoQADataset():
         del self.batch
         del self.data_converted
         self.data_converted = self.bert_data_helper.convert(self.data[self.prev_state:self.prev_state + self.batch_size])
-        if len(data_converted) > self.batch_size:
+        if len(self.data_converted) > self.batch_size:
             self.data_converted = self.data_converted[:self.batch_size]
         self.batch = BatchGenerator(self.vocab, self.data_converted, training = self.train, batch_size = self.batch_size, additional_fields=['input_ids','segment_ids','input_mask','start_position','end_position', 
             'question_mask','rationale_mask','yes_mask','extractive_mask','no_mask','unk_mask','qid'],
