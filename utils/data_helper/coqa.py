@@ -461,7 +461,7 @@ class CoQAEvaluator():
             if key not in pred_data:
                 # sys.stderr.write('Missing prediction for {} and turn_id: {}\n'.format(story_id, turn_id))
                 continue
-            #print('lol')
+            print('lol')
             a_pred = pred_data[key]
             scores = self.compute_turn_score(story_id, turn_id, a_pred)
             # Take max over all gold answers
