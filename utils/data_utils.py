@@ -6,6 +6,9 @@ from collections import Counter, defaultdict
 import numpy as np
 from random import shuffle
 import math
+import textacy.preprocessing.replace as rep
+import spacy
+nlp = spacy.load('en_core_web_sm')
 
 def prepare_datasets(config, tokenizer_model):
     tokenizer = tokenizer_model[1].from_pretrained(tokenizer_model[2])
@@ -27,6 +30,23 @@ def read_json(filename, encoding='utf-8'):
     contents = get_file_contents(filename, encoding=encoding)
     return json.loads(contents)
 
+def preprocess(text):
+    text = ' '.join(text)
+    temp_text = rep.replace_currency_symbols(text, replace_with = '_CUR_')
+    temp_text = rep.replace_emails(temp_text, replace_with = '_EMAIL_')
+    temp_text = rep.replace_emojis(temp_text, replace_with='_EMOJI_')
+    temp_text = rep.replace_hashtags(temp_text, replace_with='_TAG_')
+    temp_text = rep.replace_numbers(temp_text, replace_with='_NUMBER_')
+    temp_text = rep.replace_phone_numbers(temp_text, replace_with = '_PHONE_')
+    temp_text = rep.replace_urls(temp_text, replace_with = '_URL_')
+    temp_text = rep.replace_user_handles(temp_text, replace_with = '_USER_')
+
+    doc = nlp(temp_text)
+    tokens = []
+    for t in doc:
+        tokens.append(t.text)
+    return tokens
+
 class CoQADataset(Dataset):
     """CoQA dataset."""
 
@@ -40,6 +60,7 @@ class CoQADataset(Dataset):
         self.vocab = Counter()
         dataset = read_json(filename)
         for paragraph in dataset['data']:
+            #print(paragraph)
             history = []
             for qas in paragraph['qas']:
                 qas['paragraph_id'] = len(self.paragraphs)
@@ -47,11 +68,13 @@ class CoQADataset(Dataset):
                 n_history = len(history) #if config['n_history'] < 0 else min(config['n_history'], len(history))
                 if n_history > 0:
                     for i, (q, a) in enumerate(history[-n_history:]):
+                        q1 = preprocess(q)
+                        a1 = preprocess(a)
                         d = n_history - i
                         temp.append('<Q{}>'.format(d))
-                        temp.extend(q)
+                        temp.extend(q1)
                         temp.append('<A{}>'.format(d))
-                        temp.extend(a)
+                        temp.extend(a1)
                 temp.append('<Q>')
                 temp.extend(qas['annotated_question']['word'])
                 history.append((qas['annotated_question']['word'], qas['annotated_answer']['word']))
@@ -86,6 +109,7 @@ class CoQADataset(Dataset):
                 doc_length_available = doc_length_available - 3
             
             paragraph = self.paragraphs[ex['paragraph_id']]['annotated_context']['word']
+            paragraph = preprocess(paragraph)
             if model_name != 'RoBERTa' and model_name != 'SpanBERT':
                 paragraph = [p.lower() for p in paragraph]
             paragraph_length = len(paragraph)
@@ -205,10 +229,8 @@ class CustomDataLoader:
 
 if __name__=='__main__':
     from transformers import *
-    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-    dataset = CoQADataset('/home/aniket/coqa-bert-baselines/data/coqa.train.json')
-    dataset.chunk_paragraphs(tokenizer, 'BERT')
-    dataloader = CustomDataLoader(dataset, 4)
-    dataloader.prepare()
+    #tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    dataset = CoQADataset('coqa.train.json')
+
     
 
