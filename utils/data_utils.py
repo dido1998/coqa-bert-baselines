@@ -7,6 +7,7 @@ import numpy as np
 from random import shuffle
 import math
 import textacy.preprocessing.replace as rep
+from tqdm import tqdm
 import spacy
 nlp = spacy.load('en_core_web_sm')
 
@@ -67,7 +68,7 @@ class CoQADataset(Dataset):
                 temp = []
                 n_history = len(history) #if config['n_history'] < 0 else min(config['n_history'], len(history))
                 if n_history > 0:
-                    for i, (q, a) in enumerate(history[-n_history:]):
+                    for i, (q, a) in tqdm(enumerate(history[-n_history:])):
                         q1 = preprocess(q)
                         a1 = preprocess(a)
                         d = n_history - i
@@ -100,7 +101,7 @@ class CoQADataset(Dataset):
         c_unknown = 0
         c_known = 0
         dis = 0
-        for i, ex in enumerate(self.examples):
+        for i, ex in tqdm(enumerate(self.examples)):
             question_length = len(ex['annotated_question']['word'])
             if question_length > 350: # TODO provide from config
                 continue
