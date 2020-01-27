@@ -60,7 +60,7 @@ class CoQADataset(Dataset):
         self.examples = []
         self.vocab = Counter()
         dataset = read_json(filename)
-        for paragraph in dataset['data']:
+        for paragraph in tqdm(dataset['data']):
             #print(paragraph)
             history = []
             for qas in paragraph['qas']:
@@ -68,7 +68,7 @@ class CoQADataset(Dataset):
                 temp = []
                 n_history = len(history) #if config['n_history'] < 0 else min(config['n_history'], len(history))
                 if n_history > 0:
-                    for i, (q, a) in tqdm(enumerate(history[-n_history:])):
+                    for i, (q, a) in enumerate(history[-n_history:]):
                         q1 = preprocess(q)
                         a1 = preprocess(a)
                         d = n_history - i
